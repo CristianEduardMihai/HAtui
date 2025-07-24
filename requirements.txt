@@ -1,0 +1,4 @@
+httpx==0.28.1
+python-dotenv==1.1.1
+textual==4.0.0
+pyyaml==6.0.2
