@@ -144,17 +144,48 @@ class EntityWidget(Static):
         # try to toggle or activate this entity
         try:
             if self.entity_type == 'toggle':
-                success = await self.ha_client.toggle_light(self.entity_config.entity)
+                # instant UI update - flip state immediately for zero-delay feedback
+                old_state = self.state
+                self.state = "on" if old_state == "off" else "off"
+                self.update_display()
+                
+                # send command in background, don't wait for it
+                asyncio.create_task(self._send_toggle_command(old_state))
+                return True
+                    
             elif self.entity_type == 'action':
                 domain = self.entity_config.entity.split('.')[0]
                 success = await self.ha_client.call_service(domain, "turn_on", self.entity_config.entity)
+                if success:
+                    # for scripts/automations, just refresh normally
+                    await self.refresh_state()
+                return success
             else:
                 return False  # can't toggle sensors
-            
-            if success:
-                await asyncio.sleep(0.5)
-                await self.refresh_state()
-                return True
-            return False
+                
         except Exception:
             return False
+    
+    async def _send_toggle_command(self, old_state: str) -> None:
+        # send actual toggle command in background
+        try:
+            success = await self.ha_client.toggle_light(self.entity_config.entity)
+            
+            if not success:
+                # if command failed, revert UI
+                self.state = old_state
+                self.update_display()
+            else:
+                # verify the change after a short delay
+                await asyncio.sleep(0.1)
+                await self.refresh_state()
+                
+        except Exception:
+            # if anything goes wrong, revert the UI
+            self.state = old_state
+            self.update_display()
+    
+    async def _verify_state_change(self) -> None:
+        # verify state change in background after a short delay
+        await asyncio.sleep(0.1)  # very short delay to let HA process
+        await self.refresh_state()

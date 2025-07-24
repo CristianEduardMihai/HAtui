@@ -468,6 +468,11 @@ class MainTUI(App):
         # manually refresh all entities
         await self.auto_refresh()
         self.notify("Refreshed all entities!", severity="information")
+    
+    async def on_unmount(self) -> None:
+        # clean up HTTP client when app shuts down
+        if self.ha_client:
+            await self.ha_client.close()
 
 
 if __name__ == "__main__":
