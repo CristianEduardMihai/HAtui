@@ -1,0 +1,53 @@
+Screen {
+    background: $surface;
+}
+
+#entity-grid {
+    grid-size: 3 3;
+    grid-gutter: 1 1;
+    margin: 2;
+    height: auto;
+}
+
+.empty-cell {
+    border: dashed $primary;
+    text-align: center;
+    height: 6;
+    content-align: center middle;
+    color: $text-muted;
+}
+
+.empty-cell.selected {
+    border: heavy $accent;
+    color: $text;
+}
+
+EntityWidget {
+    height: 6;
+}
+
+#status-bar {
+    dock: bottom;
+    height: 3;
+    background: $panel;
+    padding: 1;
+}
+
+/* Entity Browser Modal */
+EntityBrowserScreen {
+    align: center middle;
+}
+
+EntityBrowserScreen > Container {
+    background: $panel;
+    border: thick $primary;
+    width: 60;
+    height: 20;
+    padding: 2;
+}
+
+#browser-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+}
