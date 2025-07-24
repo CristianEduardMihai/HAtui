@@ -1,6 +1,7 @@
 import os
 import httpx
-from typing import Dict, Any, Optional
+import asyncio
+from typing import Dict, Any, Optional, List
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,7 +24,7 @@ class HomeAssistantClient:
         self.base_url = self.base_url.rstrip("/")
     
     async def get_state(self, entity_id: str) -> Optional[Dict[str, Any]]:
-        """Get state entity"""
+       # Get state entity
         url = f"{self.base_url}/api/states/{entity_id}"
         
         async with httpx.AsyncClient() as client:
@@ -37,7 +38,7 @@ class HomeAssistantClient:
     
     async def call_service(self, domain: str, service: str, entity_id: str, 
                           service_data: Optional[Dict[str, Any]] = None) -> bool:
-        """Call HA service"""
+       # Call HA service
         url = f"{self.base_url}/api/services/{domain}/{service}"
         
         data = {"entity_id": entity_id}
@@ -63,7 +64,7 @@ class HomeAssistantClient:
         return await self.call_service("light", "turn_off", entity_id)
     
     async def test_connection(self) -> bool:
-        """Test the connection to HA"""
+       # Test the connection to HA
         url = f"{self.base_url}/api/"
         
         async with httpx.AsyncClient() as client:
@@ -75,3 +76,16 @@ class HomeAssistantClient:
             except httpx.HTTPError as e:
                 print(f"Failed to connect to HA: {e}")
                 return False
+    
+    async def get_all_entities(self) -> List[Dict[str, Any]]:
+       # Get all entities from Home Assistant
+        url = f"{self.base_url}/api/states"
+        
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url, headers=self.headers)
+                response.raise_for_status()
+                return response.json()
+            except httpx.HTTPError as e:
+                print(f"Error getting all entities: {e}")
+                return []

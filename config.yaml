@@ -1,0 +1,10 @@
+dashboard:
+  name: "Main Dashboard"
+  refresh_interval: 3
+  rows: 3
+  cols: 3
+  entities:
+    - entity: light.light_switch1_light
+      row: 0
+      col: 0
+      type: toggle
