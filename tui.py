@@ -196,12 +196,29 @@ class GridDashboard(Container):
         if self.selected_position:
             old_row, old_col = self.selected_position
             if (old_row, old_col) in self.widgets_grid:
+                # clear entity widget selection
                 self.widgets_grid[(old_row, old_col)].set_selected(False)
+            else:
+                # clear empty cell selection
+                try:
+                    old_empty = self.query_one(f"#cell-{old_row}-{old_col}")
+                    old_empty.styles.border = ("dashed", "white")
+                except:
+                    pass
         
         # set new selection
         self.selected_position = (row, col)
-        if (row, col) in self.widgets_grid:
-            self.widgets_grid[(row, col)].set_selected(True)
+        if row >= 0 and col >= 0:  # valid position
+            if (row, col) in self.widgets_grid:
+                # highlight entity widget
+                self.widgets_grid[(row, col)].set_selected(True)
+            else:
+                # highlight empty cell
+                try:
+                    empty_cell = self.query_one(f"#cell-{row}-{col}")
+                    empty_cell.styles.border = ("heavy", "cyan")
+                except:
+                    pass
     
     def get_widget_at(self, row: int, col: int) -> Optional[EntityWidget]:
         # get whatever widget is at this position
@@ -229,6 +246,11 @@ class MainTUI(App):
         height: 6;
         content-align: center middle;
         color: $text-muted;
+    }
+    
+    .empty-cell.selected {
+        border: heavy $accent;
+        color: $text;
     }
     
     EntityWidget {
@@ -316,6 +338,13 @@ class MainTUI(App):
             # start auto-refresh timer
             self.set_interval(config.dashboard.refresh_interval, self.auto_refresh)
             
+            # initialize selection in view mode
+            self.dashboard.set_selected_position(self.selected_row, self.selected_col)
+            self.update_status_bar()
+            
+            # set the title to the dashboard name
+            self.title = config.dashboard.name
+            
             self.notify("Connected to Home Assistant!", severity="information")
             
         except Exception as e:
@@ -343,7 +372,12 @@ class MainTUI(App):
         if self.edit_mode:
             status.update(f"Mode: EDIT | Position: [{self.selected_row},{self.selected_col}] | 'a' Add | 'del' Remove | arrows Move")
         else:
-            status.update("Mode: View | Press 'e' for Edit Mode")
+            widget = self.dashboard.get_widget_at(self.selected_row, self.selected_col)
+            if widget:
+                entity_name = widget.friendly_name
+                status.update(f"Mode: View | Position: [{self.selected_row},{self.selected_col}] | Selected: {entity_name} | SPACE: Toggle")
+            else:
+                status.update(f"Mode: View | Position: [{self.selected_row},{self.selected_col}] | Empty Cell | Press 'e' for Edit Mode")
     
     def action_edit_mode(self) -> None:
         # toggle edit mode on/off
@@ -381,7 +415,7 @@ class MainTUI(App):
                 self.config_manager.add_entity(result["entity"], result["row"], result["col"])
                 
                 # create widget and add to dashboard
-                entity_config = EntityConfig(result["entity"], result["row"], result["col"])
+                entity_config = EntityConfig(result["entity"], [result["row"], result["col"]])
                 widget = EntityWidget(entity_config, self.ha_client)
                 self.dashboard.add_entity_widget(widget, result["row"], result["col"])
                 await widget.refresh_state()
@@ -407,7 +441,7 @@ class MainTUI(App):
             self.notify(f"Removed {entity_id}", severity="information")
     
     def action_move_up(self) -> None:
-       # Move selection up or move entity up.
+        # Move selection up or move entity up in edit mode
         if self.edit_mode:
             if self.selected_row > 0:
                 new_row = self.selected_row - 1
@@ -415,9 +449,15 @@ class MainTUI(App):
                     self.selected_row = new_row
                 self.dashboard.set_selected_position(self.selected_row, self.selected_col)
                 self.update_status_bar()
+        else:
+            # In view mode, navigate between positions
+            if self.selected_row > 0:
+                self.selected_row -= 1
+                self.dashboard.set_selected_position(self.selected_row, self.selected_col)
+                self.update_status_bar()
     
     def action_move_down(self) -> None:
-       # Move selection down or move entity down.
+        # Move selection down or move entity down in edit mode
         if self.edit_mode:
             if self.selected_row < self.dashboard.rows - 1:
                 new_row = self.selected_row + 1
@@ -425,9 +465,15 @@ class MainTUI(App):
                     self.selected_row = new_row
                 self.dashboard.set_selected_position(self.selected_row, self.selected_col)
                 self.update_status_bar()
+        else:
+            # In view mode, navigate between positions
+            if self.selected_row < self.dashboard.rows - 1:
+                self.selected_row += 1
+                self.dashboard.set_selected_position(self.selected_row, self.selected_col)
+                self.update_status_bar()
     
     def action_move_left(self) -> None:
-       # Move selection left or move entity left.
+        # Move selection left or move entity left in edit mode
         if self.edit_mode:
             if self.selected_col > 0:
                 new_col = self.selected_col - 1
@@ -435,14 +481,26 @@ class MainTUI(App):
                     self.selected_col = new_col
                 self.dashboard.set_selected_position(self.selected_row, self.selected_col)
                 self.update_status_bar()
+        else:
+            # In view mode, navigate between positions
+            if self.selected_col > 0:
+                self.selected_col -= 1
+                self.dashboard.set_selected_position(self.selected_row, self.selected_col)
+                self.update_status_bar()
     
     def action_move_right(self) -> None:
-       # Move selection right or move entity right.
+        # Move selection right or move entity right in edit mode
         if self.edit_mode:
             if self.selected_col < self.dashboard.cols - 1:
                 new_col = self.selected_col + 1
                 if self._try_move_entity(self.selected_row, new_col):
                     self.selected_col = new_col
+                self.dashboard.set_selected_position(self.selected_row, self.selected_col)
+                self.update_status_bar()
+        else:
+            # In view mode, navigate between positions
+            if self.selected_col < self.dashboard.cols - 1:
+                self.selected_col += 1
                 self.dashboard.set_selected_position(self.selected_row, self.selected_col)
                 self.update_status_bar()
     
@@ -497,5 +555,5 @@ class MainTUI(App):
 
 if __name__ == "__main__":
     app = MainTUI()
-    app.title = "Home Assistant TUI"
+    app.sub_title = "HAtui"
     app.run()

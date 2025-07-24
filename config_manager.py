@@ -9,10 +9,25 @@ load_dotenv()
 @dataclass
 class EntityConfig:
     entity: str
-    row: int
-    col: int
+    position: List[int]  # [row, col]
     type: str = "auto"  # auto, toggle, sensor, climate
     icon: Optional[str] = None
+    
+    @property
+    def row(self) -> int:
+        return self.position[0]
+    
+    @property 
+    def col(self) -> int:
+        return self.position[1]
+    
+    @row.setter
+    def row(self, value: int):
+        self.position[0] = value
+        
+    @col.setter
+    def col(self, value: int):
+        self.position[1] = value
 
 @dataclass
 class DashboardConfig:
@@ -108,7 +123,7 @@ class ConfigManager:
                 raise Exception(f"Position ({row}, {col}) is already occupied")
         
         # add it and save right away
-        new_entity = EntityConfig(entity=entity_id, row=row, col=col, type=entity_type)
+        new_entity = EntityConfig(entity=entity_id, position=[row, col], type=entity_type)
         self.config.dashboard.entities.append(new_entity)
         self.save_config()
     
@@ -141,8 +156,7 @@ class ConfigManager:
         # find the entity and update its position
         for entity in self.config.dashboard.entities:
             if entity.entity == entity_id:
-                entity.row = new_row
-                entity.col = new_col
+                entity.position = [new_row, new_col]  # [row, col]
                 self.save_config()
                 return True
         

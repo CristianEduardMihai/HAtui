@@ -1,14 +1,14 @@
 dashboard:
-  name: "Main Dashboard"
-  refresh_interval: 3
-  rows: 3
   cols: 3
   entities:
-    - entity: light.bedroom1_main_desk_alarm_light
-      row: 0
-      col: 0
-      type: toggle
-    - entity: light.light_switch1_light
-      row: 0
-      col: 1
-      type: toggle
+  - entity: light.bedroom1_main_desk_alarm_light
+    icon: null
+    position: [0, 0]
+    type: toggle
+  - entity: light.light_switch1_light
+    icon: null
+    position: [0, 1]
+    type: toggle
+  name: Main Dashboard
+  refresh_interval: 3
+  rows: 3
