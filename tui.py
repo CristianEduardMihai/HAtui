@@ -136,38 +136,58 @@ class GridDashboard(Container):
     
     def compose(self) -> ComposeResult:
         with Grid(id="entity-grid"):
-            # create empty grid cells to start
+            # create all grid positions initially as empty, but store them for later access
             for row in range(self.rows):
                 for col in range(self.cols):
                     yield Static(f"[{row},{col}]\n\nEmpty\nPress E to edit", 
-                               id=f"empty-{row}-{col}", 
+                               id=f"cell-{row}-{col}", 
                                classes="empty-cell")
     
     def add_entity_widget(self, widget: EntityWidget, row: int, col: int) -> None:
-        # put an entity widget in the grid
-        # remove the empty cell first
+        # replace the empty cell at this position with the entity widget
+        grid = self.query_one("#entity-grid", Grid)
+        
+        # find and remove the empty cell at this position
         try:
-            empty_cell = self.query_one(f"#empty-{row}-{col}")
+            empty_cell = self.query_one(f"#cell-{row}-{col}")
+            cell_index = list(grid.children).index(empty_cell)
             empty_cell.remove()
         except:
-            pass
+            # if no empty cell, just append
+            cell_index = len(grid.children)
         
-        # add the entity widget
+        # add the entity widget and track it
         self.widgets_grid[(row, col)] = widget
-        grid = self.query_one("#entity-grid", Grid)
-        grid.mount(widget)
+        
+        # insert at the correct position in the grid
+        if cell_index < len(grid.children):
+            grid.mount(widget, before=list(grid.children)[cell_index])
+        else:
+            grid.mount(widget)
     
     def remove_entity_widget(self, row: int, col: int) -> None:
-        # remove entity widget from grid
-        if (row, col) in self.widgets_grid:
-            widget = self.widgets_grid.pop((row, col))
-            widget.remove()
+        # replace entity widget with empty cell
+        if (row, col) not in self.widgets_grid:
+            return
             
-            # put back empty cell
-            grid = self.query_one("#entity-grid", Grid)
-            empty_cell = Static(f"[{row},{col}]\n\nEmpty\nPress E to edit", 
-                              id=f"empty-{row}-{col}", 
-                              classes="empty-cell")
+        grid = self.query_one("#entity-grid", Grid)
+        widget = self.widgets_grid.pop((row, col))
+        
+        # find the position of the widget to remove
+        try:
+            cell_index = list(grid.children).index(widget)
+            widget.remove()
+        except:
+            cell_index = len(grid.children)
+        
+        # add back empty cell at the same position
+        empty_cell = Static(f"[{row},{col}]\n\nEmpty\nPress E to edit", 
+                          id=f"cell-{row}-{col}", 
+                          classes="empty-cell")
+        
+        if cell_index < len(grid.children):
+            grid.mount(empty_cell, before=list(grid.children)[cell_index])
+        else:
             grid.mount(empty_cell)
     
     def set_selected_position(self, row: int, col: int) -> None:
