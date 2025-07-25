@@ -9,6 +9,7 @@ from config_manager import ConfigManager, EntityConfig
 from entity_widget import EntityWidget
 from components.entity_browser import EntityBrowserScreen
 from components.grid_dashboard import GridDashboard
+from components.edit_controller import EditController
 
 
 class MainTUI(App):
@@ -35,11 +36,7 @@ class MainTUI(App):
         self.config_manager = ConfigManager()
         self.ha_client = None
         self.dashboard = None
-        self.edit_mode = False
-        self.selected_row = 0
-        self.selected_col = 0
-        self.holding_entity = None
-        self.holding_from_pos = None
+        self.edit_controller = EditController(self)
     
     def compose(self) -> ComposeResult:
         yield Header()
@@ -72,8 +69,8 @@ class MainTUI(App):
             self.set_interval(config.dashboard.refresh_interval, self.auto_refresh)
             
             # initialize selection in view mode
-            self.dashboard.set_selected_position(self.selected_row, self.selected_col)
-            self.update_status_bar()
+            self.dashboard.set_selected_position(self.edit_controller.selected_row, self.edit_controller.selected_col)
+            self.edit_controller.update_status_bar()
             
             # set the title to the dashboard name
             self.title = config.dashboard.name
@@ -99,254 +96,48 @@ class MainTUI(App):
         for widget in self.dashboard.widgets_grid.values():
             await widget.refresh_state()
     
-    def update_status_bar(self) -> None:
-        # update status bar with current mode info
-        status = self.query_one("#status-bar", Static)
-        if self.edit_mode:
-            if self.holding_entity:
-                entity_name = self.holding_entity.friendly_name
-                status.update(f"Mode: EDIT | HOLDING: {entity_name} | Position: [{self.selected_row},{self.selected_col}] | arrows Move | ENTER Drop")
-            else:
-                widget = self.dashboard.get_widget_at(self.selected_row, self.selected_col)
-                if widget:
-                    entity_name = widget.friendly_name
-                    status.update(f"Mode: EDIT | Position: [{self.selected_row},{self.selected_col}] | Selected: {entity_name} | ENTER Pick | 'a' Add | 'del' Remove")
-                else:
-                    status.update(f"Mode: EDIT | Position: [{self.selected_row},{self.selected_col}] | Empty Cell | 'a' Add | arrows Move")
-        else:
-            widget = self.dashboard.get_widget_at(self.selected_row, self.selected_col)
-            if widget:
-                entity_name = widget.friendly_name
-                status.update(f"Mode: View | Position: [{self.selected_row},{self.selected_col}] | Selected: {entity_name} | SPACE: Toggle")
-            else:
-                status.update(f"Mode: View | Position: [{self.selected_row},{self.selected_col}] | Empty Cell | Press 'e' for Edit Mode")
-    
     def action_edit_mode(self) -> None:
         # toggle edit mode on/off
-        self.edit_mode = not self.edit_mode
-        if self.edit_mode:
-            self.dashboard.set_selected_position(self.selected_row, self.selected_col)
-        else:
-            self.dashboard.set_selected_position(-1, -1)  # clear selection
-        self.update_status_bar()
-        self.notify(f"Edit mode: {'ON' if self.edit_mode else 'OFF'}", severity="information")
+        self.edit_controller.toggle_edit_mode()
     
     def action_exit_edit(self) -> None:
         # exit edit mode
-        if self.edit_mode:
-            # If holding an entity, clear the holding state and ghost
-            if self.holding_entity:
-                self.dashboard.set_ghost_entity(None)
-                self.holding_entity.set_being_moved(False)
-                self.holding_entity = None
-                self.holding_from_pos = None
-            
-            self.edit_mode = False
-            self.dashboard.set_selected_position(-1, -1)  # clear all selectio
-            self.update_status_bar()
+        self.edit_controller.exit_edit_mode()
     
     async def action_pick_drop_entity(self) -> None:
         # pick up or drop an entity for moving
-        if not self.edit_mode:
-            return
-        
-        if self.holding_entity:
-            # Drop the entity at current position
-            await self._drop_entity_at(self.selected_row, self.selected_col)
-        else:
-            # Pick up entity at current position
-            widget = self.dashboard.get_widget_at(self.selected_row, self.selected_col)
-            if widget:
-                self.holding_entity = widget
-                self.holding_from_pos = (self.selected_row, self.selected_col)
-                # Set the original entity as "being moved" (dimmed)
-                widget.set_being_moved(True)
-                # Show ghost at cursor position
-                self.dashboard.set_ghost_entity(widget, self.selected_row, self.selected_col)
-                # Clear normal selection since we're now holding
-                self.dashboard.set_selected_position(-1, -1)
-                self.notify(f"Picked up {widget.friendly_name}", severity="information")
-                self.update_status_bar()
-    
-    async def _drop_entity_at(self, row: int, col: int) -> None:
-        # drop the held entity at specified position
-        if not self.holding_entity:
-            return
-        
-        # Check if trying to drop at same position
-        if (row, col) == self.holding_from_pos:
-            # Just clear being moved state and stay in place, clear ghost
-            self.dashboard.set_ghost_entity(None)
-            self.holding_entity.set_being_moved(False)
-            self.holding_entity = None
-            self.holding_from_pos = None
-            # Restore normal selection
-            self.dashboard.set_selected_position(self.selected_row, self.selected_col)
-            self.notify("Entity dropped at original position", severity="information")
-            self.update_status_bar()
-            return
-        
-        # Check if target position is occupied (ignore ghost)
-        target_widget = self.dashboard.get_widget_at(row, col)
-        if target_widget is not None and target_widget != self.holding_entity:
-            self.notify(f"Position ({row}, {col}) is occupied", severity="warning")
-            return
-        
-        # Update config with new position
-        entity_id = self.holding_entity.entity_config.entity
-        
-        try:
-            # Update config first
-            if self.config_manager.move_entity(entity_id, row, col):
-                # Store references for async operation
-                old_row, old_col = self.holding_from_pos
-                moved_entity = self.holding_entity
-                
-                # Clear ghost entity first
-                self.dashboard.set_ghost_entity(None)
-                
-                # Let UI settle before continuing
-                await asyncio.sleep(0.1)
-                
-                # Remove from old position in grid
-                self.dashboard.remove_entity_widget(old_row, old_col)
-                
-                # Update widget's internal position
-                moved_entity.entity_config.row = row
-                moved_entity.entity_config.col = col
-                
-                # Clear being moved state
-                moved_entity.set_being_moved(False)
-                
-                # Clear holding references
-                self.holding_entity = None
-                self.holding_from_pos = None
-                
-                # Let UI settle again
-                await asyncio.sleep(0.1)
-                
-                # Add to new position in grid
-                self.dashboard.add_entity_widget(moved_entity, row, col)
-                
-                # Restore normal selection
-                self.dashboard.set_selected_position(self.selected_row, self.selected_col)
-                
-                self.notify(f"Moved {entity_id} to ({row}, {col})", severity="information")
-            else:
-                # Config update failed, clear ghost and being moved state
-                self.dashboard.set_ghost_entity(None)
-                self.holding_entity.set_being_moved(False)
-                self.holding_entity = None
-                self.holding_from_pos = None
-                self.dashboard.set_selected_position(self.selected_row, self.selected_col)
-                self.notify("Failed to update config", severity="error")
-                
-        except Exception as e:
-            # Something went wrong, clear everything and restore to original state
-            # Aka dont mess the config
-            self.dashboard.set_ghost_entity(None)
-            self.holding_entity.set_being_moved(False)
-            self.holding_entity = None
-            self.holding_from_pos = None
-            self.dashboard.set_selected_position(self.selected_row, self.selected_col)
-            self.notify(f"Error moving entity: {e}", severity="error")
-        
-        self.update_status_bar()
+        await self.edit_controller.pick_drop_entity()
     
     async def action_add_entity(self) -> None:
         # open entity browser to add new entity
-        if not self.edit_mode:
-            self.notify("Enter edit mode first (press 'e')", severity="warning")
-            return
-        
-        # get positions that are already taken
-        occupied = set(self.dashboard.widgets_grid.keys())
-        
-        # open the entity browser
-        browser = EntityBrowserScreen(self.ha_client, occupied)
-        result = await self.push_screen_wait(browser)
-        
-        if result:
-            try:
-                # add to config
-                self.config_manager.add_entity(result["entity"], result["row"], result["col"])
-                
-                # create widget and add to dashboard
-                entity_config = EntityConfig(result["entity"], [result["row"], result["col"]])
-                widget = EntityWidget(entity_config, self.ha_client)
-                self.dashboard.add_entity_widget(widget, result["row"], result["col"])
-                await widget.refresh_state()
-                
-                self.notify(f"Added {result['entity']} at ({result['row']}, {result['col']})", severity="information")
-                
-            except Exception as e:
-                self.notify(f"Error adding entity: {e}", severity="error")
+        await self.edit_controller.add_entity()
     
     async def action_remove_entity(self) -> None:
         # remove entity at current selected position
-        if not self.edit_mode:
-            return
-        
-        widget = self.dashboard.get_widget_at(self.selected_row, self.selected_col)
-        if widget:
-            entity_id = widget.entity_config.entity
-            
-            # remove from config and dashboard
-            self.config_manager.remove_entity(entity_id)
-            self.dashboard.remove_entity_widget(self.selected_row, self.selected_col)
-            
-            self.notify(f"Removed {entity_id}", severity="information")
+        await self.edit_controller.remove_entity()
     
     def action_move_up(self) -> None:
         # Move selection up
-        if self.selected_row > 0:
-            self.selected_row -= 1
-            if not self.holding_entity:
-                self.dashboard.set_selected_position(self.selected_row, self.selected_col)
-            else:
-                # Move ghost entity to show where it will be dropped
-                self.dashboard.set_ghost_entity(self.holding_entity, self.selected_row, self.selected_col)
-            self.update_status_bar()
+        self.edit_controller.move_up()
     
     def action_move_down(self) -> None:
         # Move selection down
-        if self.selected_row < self.dashboard.rows - 1:
-            self.selected_row += 1
-            if not self.holding_entity:
-                self.dashboard.set_selected_position(self.selected_row, self.selected_col)
-            else:
-                # Move ghost entity to show where it will be dropped
-                self.dashboard.set_ghost_entity(self.holding_entity, self.selected_row, self.selected_col)
-            self.update_status_bar()
+        self.edit_controller.move_down()
     
     def action_move_left(self) -> None:
         # Move selection left
-        if self.selected_col > 0:
-            self.selected_col -= 1
-            if not self.holding_entity:
-                self.dashboard.set_selected_position(self.selected_row, self.selected_col)
-            else:
-                # Move ghost entity to show where it will be dropped
-                self.dashboard.set_ghost_entity(self.holding_entity, self.selected_row, self.selected_col)
-            self.update_status_bar()
+        self.edit_controller.move_left()
     
     def action_move_right(self) -> None:
         # Move selection right
-        if self.selected_col < self.dashboard.cols - 1:
-            self.selected_col += 1
-            if not self.holding_entity:
-                self.dashboard.set_selected_position(self.selected_row, self.selected_col)
-            else:
-                # Move ghost entity to show where it will be dropped
-                self.dashboard.set_ghost_entity(self.holding_entity, self.selected_row, self.selected_col)
-            self.update_status_bar()
+        self.edit_controller.move_right()
     
     async def action_toggle_entity(self) -> None:
         # toggle entity at current position
-        if self.edit_mode:
+        if self.edit_controller.edit_mode:
             return  # don't toggle in edit mode
         
-        widget = self.dashboard.get_widget_at(self.selected_row, self.selected_col)
+        widget = self.dashboard.get_widget_at(self.edit_controller.selected_row, self.edit_controller.selected_col)
         if widget:
             success = await widget.toggle_entity()
             if success:
