@@ -27,6 +27,7 @@ class EditController:
             self.app.dashboard.set_selected_position(self.selected_row, self.selected_col)
         else:
             self.app.dashboard.set_selected_position(-1, -1)  # clear selection
+        
         self.update_status_bar()
         self.app.notify(f"Edit mode: {'ON' if self.edit_mode else 'OFF'}", severity="information")
     
@@ -249,23 +250,37 @@ class EditController:
             self.update_status_bar()
     
     def update_status_bar(self) -> None:
-        # update status bar with current edit mode info
+        # update status bar with current edit mode info and all relevant commands
         status = self.app.query_one("#status-bar", Static)
         if self.edit_mode:
             if self.holding_entity:
                 entity_name = self.holding_entity.friendly_name
-                status.update(f"Mode: EDIT | HOLDING: {entity_name} | Position: [{self.selected_row},{self.selected_col}] | arrows Move | ENTER Drop")
+                status.update(f"[EDIT] Holding: {entity_name} | ↑↓←→: Move | Enter: Drop | Esc: Cancel")
             else:
                 widget = self.app.dashboard.get_widget_at(self.selected_row, self.selected_col)
                 if widget:
                     entity_name = widget.friendly_name
-                    status.update(f"Mode: EDIT | Position: [{self.selected_row},{self.selected_col}] | Selected: {entity_name} | ENTER Pick | 'a' Add | 'del' Remove")
+                    status.update(f"[EDIT] {entity_name} | ↑↓←→: Navigate | Enter: Pick | a: Add | Del: Remove | e: Exit Edit")
                 else:
-                    status.update(f"Mode: EDIT | Position: [{self.selected_row},{self.selected_col}] | Empty Cell | 'a' Add | arrows Move")
+                    status.update(f"[EDIT] Empty cell | ↑↓←→: Navigate | a: Add Entity | e: Exit Edit")
         else:
             widget = self.app.dashboard.get_widget_at(self.selected_row, self.selected_col)
             if widget:
                 entity_name = widget.friendly_name
-                status.update(f"Mode: View | Position: [{self.selected_row},{self.selected_col}] | Selected: {entity_name} | SPACE: Toggle")
+                
+                # view mode
+                commands = ["↑↓←→: Navigate", "Space: Toggle"]
+                
+                if widget.entity_type == 'light' and widget.supports_brightness():
+                    if widget.state == 'on' and 'brightness' in widget.attributes:
+                        brightness_pct = round(widget.attributes.get('brightness', 0) / 255 * 100)
+                        commands.append(f"Ctrl+↑↓: Brightness ({brightness_pct}%)")
+                    else:
+                        commands.append("Ctrl+↑↓: Brightness")
+                
+                # general commands
+                commands.extend(["r: Refresh", "e: Edit Mode", "q: Quit"])
+                
+                status.update(f"[VIEW] {entity_name} | {' | '.join(commands)}")
             else:
-                status.update(f"Mode: View | Position: [{self.selected_row},{self.selected_col}] | Empty Cell | Press 'e' for Edit Mode")
+                status.update(f"[VIEW] Empty cell | ↑↓←→: Navigate | r: Refresh | e: Edit Mode | q: Quit")

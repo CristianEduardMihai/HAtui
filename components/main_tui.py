@@ -1,7 +1,7 @@
 import asyncio
 import os
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static
+from textual.widgets import Header, Static
 from textual.binding import Binding
 from textual.events import Key
 from typing import Optional
@@ -17,21 +17,25 @@ class MainTUI(App):
     # main TUI app with interactive config
     CSS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "styles", "main.css")
     
+    # All bindings
     BINDINGS = [
-        Binding("space", "handle_space_key", "Toggle Entity"),
-        Binding("ctrl+up", "brightness_up", "Brightness Up"),
-        Binding("ctrl+down", "brightness_down", "Brightness Down"),
+        # Base bindings
+        Binding("up", "move_up", "↑"),
+        Binding("down", "move_down", "↓"), 
+        Binding("left", "move_left", "←"),
+        Binding("right", "move_right", "→"),
+        Binding("q", "quit", "Quit"),
+        # View mode bindings
+        Binding("space", "handle_space_key", "Toggle"),
+        Binding("ctrl+up", "brightness_up", "Bright+"),
+        Binding("ctrl+down", "brightness_down", "Bright-"),
         Binding("r", "refresh", "Refresh"),
-        Binding("e", "edit_mode", "Edit Mode"),
-        Binding("a", "add_entity", "Add Entity"),
+        Binding("e", "edit_mode", "Edit"),
+        # Edit mode bindings  
+        Binding("a", "add_entity", "Add"),
         Binding("delete", "remove_entity", "Remove"),
         Binding("enter", "pick_drop_entity", "Pick/Drop"),
-        Binding("up", "move_up", "Move Up"),
-        Binding("down", "move_down", "Move Down"), 
-        Binding("left", "move_left", "Move Left"),
-        Binding("right", "move_right", "Move Right"),
-        Binding("escape", "exit_edit", "Exit Edit"),
-        Binding("q", "quit", "Quit"),
+        Binding("escape", "exit_edit", "Exit"),
     ]
     
     def __init__(self):
@@ -40,14 +44,13 @@ class MainTUI(App):
         self.ha_client = None
         self.dashboard = None
         self.edit_controller = EditController(self)
-        self.last_toggle_time = {} 
+        self.last_toggle_time = {}
     
     def compose(self) -> ComposeResult:
         yield Header()
         self.dashboard = GridDashboard(3, 3)
         yield self.dashboard
         yield Static("Mode: View | Press 'e' for Edit Mode", id="status-bar")
-        yield Footer()
     
     async def on_mount(self) -> None:
         # start up the app
@@ -130,15 +133,18 @@ class MainTUI(App):
         self.edit_controller.exit_edit_mode()
     
     async def action_pick_drop_entity(self) -> None:
-        # pick up or drop an entity for moving
+        if not self.edit_controller.edit_mode:
+            return
         await self.edit_controller.pick_drop_entity()
     
     def action_add_entity(self) -> None:
-        # open entity browser to add new entity
+        if not self.edit_controller.edit_mode:
+            return
         self.edit_controller.add_entity()
     
     async def action_remove_entity(self) -> None:
-        # remove entity at current selected position
+        if not self.edit_controller.edit_mode:
+            return
         await self.edit_controller.remove_entity()
     
     def action_move_up(self) -> None:
@@ -170,7 +176,6 @@ class MainTUI(App):
         self.update_status_with_brightness(widget)
         
     async def action_brightness_up(self) -> None:
-        # Increase brightness of selected light
         import time
         
         if self.edit_controller.edit_mode:
@@ -202,7 +207,6 @@ class MainTUI(App):
             self.notify("Cannot adjust brightness", severity="warning")
     
     async def action_brightness_down(self) -> None:
-        # Decrease brightness of selected light
         import time
         
         if self.edit_controller.edit_mode:
@@ -240,15 +244,7 @@ class MainTUI(App):
         self.notify("Refreshed all entities!", severity="information")
     
     def update_status_with_brightness(self, widget) -> None:
-        if widget and widget.entity_type == 'light' and widget.supports_brightness() and widget.state == 'on':
-            brightness_pct = round(widget.attributes.get('brightness', 0) / 255 * 100)
-            status_bar = self.query_one("#status-bar", Static)
-            if self.edit_controller.edit_mode:
-                status_bar.update(f"Mode: Edit | CTRL+↑↓: Brightness ({brightness_pct}%)")
-            else:
-                status_bar.update(f"Mode: View | CTRL+↑↓: Brightness ({brightness_pct}%)")
-        else:
-            self.edit_controller.update_status_bar()
+        self.edit_controller.update_status_bar()
     
     
     async def action_handle_space_key(self) -> None:
@@ -273,13 +269,11 @@ class MainTUI(App):
         
         self.last_toggle_time[entity_id] = current_time
         
-        if entity_type != 'light':
-            success = await widget.toggle_entity()
-            if success:
-                self.notify(f"{entity_id} toggled!", severity="information")
-            else:
-                self.notify(f"Cannot toggle {entity_id}", severity="warning")
-            return
+        success = await widget.toggle_entity()
+        if success:
+            self.notify(f"{entity_id} toggled!", severity="information")
+        else:
+            self.notify(f"Cannot toggle {entity_id}", severity="warning")
             
     
     async def on_unmount(self) -> None:

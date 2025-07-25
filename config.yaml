@@ -16,7 +16,7 @@ dashboard:
   - entity: switch.relay_1
     icon: null
     position:
-    - 1
+    - 2
     - 1
     type: auto
   - entity: switch.relay_1
@@ -41,7 +41,7 @@ dashboard:
     icon: null
     position:
     - 2
-    - 1
+    - 0
     type: light
   name: Main Dashboard
   refresh_interval: 3
