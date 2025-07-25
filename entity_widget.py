@@ -16,6 +16,8 @@ class EntityWidget(Static):
         self.attributes = {}
         self.entity_type = self._detect_entity_type()
         self.is_selected = False
+        self.is_holding = False
+        self.is_being_moved = False
         
         # basic styling
         self.styles.border = ("heavy", "white")
@@ -97,7 +99,14 @@ class EntityWidget(Static):
                 state_widget.update(f"State: {self.state}")
             
             # color coding based on state
-            if self.is_selected:
+            if self.is_holding:
+                self.styles.border = ("heavy", "magenta")
+                state_widget.styles.color = "magenta"
+            elif self.is_being_moved:
+                self.styles.border = ("dashed", "gray")
+                state_widget.styles.color = "gray"
+                self.styles.opacity = "50%"
+            elif self.is_selected:
                 self.styles.border = ("heavy", "cyan")
             elif self.state in ["on", "home", "heat", "cool"]:
                 self.styles.border = ("heavy", "green")
@@ -124,6 +133,18 @@ class EntityWidget(Static):
     def set_selected(self, selected: bool) -> None:
         # highlight or unhighlight this widget
         self.is_selected = selected
+        self.update_display()
+    
+    def set_holding(self, holding: bool) -> None:
+        # set holding state for moving entities
+        self.is_holding = holding
+        self.update_display()
+    
+    def set_being_moved(self, being_moved: bool) -> None:
+        # set being moved state (dimmed on original position)
+        self.is_being_moved = being_moved
+        if not being_moved:
+            self.styles.opacity = "100%"  # Restore opacity when not being moved
         self.update_display()
     
     async def refresh_state(self) -> None:

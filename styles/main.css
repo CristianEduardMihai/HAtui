@@ -26,6 +26,15 @@ EntityWidget {
     height: 6;
 }
 
+.ghost-entity {
+    border: heavy magenta;
+    text-align: center;
+    height: 6;
+    content-align: center middle;
+    color: magenta;
+    opacity: 80%;
+}
+
 #status-bar {
     dock: bottom;
     height: 3;

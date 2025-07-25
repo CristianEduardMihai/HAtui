@@ -3,11 +3,15 @@ dashboard:
   entities:
   - entity: light.bedroom1_main_desk_alarm_light
     icon: null
-    position: [0, 0]
+    position:
+    - 0
+    - 1
     type: toggle
   - entity: light.light_switch1_light
     icon: null
-    position: [0, 1]
+    position:
+    - 0
+    - 0
     type: toggle
   name: Main Dashboard
   refresh_interval: 3

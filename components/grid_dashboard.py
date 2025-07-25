@@ -13,6 +13,8 @@ class GridDashboard(Container):
         self.cols = cols
         self.widgets_grid: Dict[tuple, EntityWidget] = {}
         self.selected_position: Optional[tuple] = None
+        self.ghost_entity: Optional[EntityWidget] = None  # entity moving
+        self.ghost_position: Optional[tuple] = None  # position of ghost/moving entity
     
     def compose(self) -> ComposeResult:
         with Grid(id="entity-grid"):
@@ -103,3 +105,58 @@ class GridDashboard(Container):
     def get_widget_at(self, row: int, col: int) -> Optional[EntityWidget]:
         # get whatever widget is at this position
         return self.widgets_grid.get((row, col))
+    
+    def set_ghost_entity(self, original_entity: Optional[EntityWidget], row: int = -1, col: int = -1) -> None:
+        # Show a "ghost" entity at the specified position for moving preview
+        # clear any existing ghost first
+        if self.ghost_entity and self.ghost_position:
+            old_row, old_col = self.ghost_position
+            try:
+                self.ghost_entity.remove()
+                # Restore empty cell so we dont cannibalize the grid
+                if (old_row, old_col) not in self.widgets_grid:
+                    grid = self.query_one("#entity-grid", Grid)
+                    empty_cell = Static(f"[{old_row},{old_col}]\n\nEmpty\nPress E to edit", 
+                                      id=f"cell-{old_row}-{old_col}", 
+                                      classes="empty-cell")
+                    # Calculate position and insert
+                    cell_index = old_row * self.cols + old_col
+                    if cell_index < len(grid.children):
+                        grid.mount(empty_cell, before=list(grid.children)[cell_index])
+                    else:
+                        grid.mount(empty_cell)
+            except:
+                pass
+        
+        # Reset ghost tracking
+        self.ghost_entity = None
+        self.ghost_position = None
+        
+        # Show new ghost if requested
+        if original_entity and row >= 0 and col >= 0:
+            # Only show ghost in empty cells
+            if (row, col) not in self.widgets_grid:
+                try:
+                    # Remove empty cell temporarily
+                    empty_cell = self.query_one(f"#cell-{row}-{col}")
+                    grid = self.query_one("#entity-grid", Grid)
+                    cell_index = list(grid.children).index(empty_cell)
+                    empty_cell.remove()
+                    
+                    # Create a ghost display widget
+                    ghost_widget = Static(f"{original_entity.friendly_name}\nState: {original_entity.state}\n(Moving...)", 
+                                        classes="ghost-entity")
+                    ghost_widget.styles.border = ("heavy", "magenta")
+                    ghost_widget.styles.height = 6
+                    
+                    # Insert ghost at correct position
+                    if cell_index < len(grid.children):
+                        grid.mount(ghost_widget, before=list(grid.children)[cell_index])
+                    else:
+                        grid.mount(ghost_widget)
+                    
+                    # Track the ghost
+                    self.ghost_entity = ghost_widget
+                    self.ghost_position = (row, col)
+                except:
+                    pass
