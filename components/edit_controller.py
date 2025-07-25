@@ -28,6 +28,8 @@ class EditController:
         else:
             self.app.dashboard.set_selected_position(-1, -1)  # clear selection
         
+        self.app.dashboard.set_edit_mode(self.edit_mode)
+        
         self.update_status_bar()
         self.app.notify(f"Edit mode: {'ON' if self.edit_mode else 'OFF'}", severity="information")
     
@@ -43,6 +45,7 @@ class EditController:
             
             self.edit_mode = False
             self.app.dashboard.set_selected_position(-1, -1)  # clear all selection
+            self.app.dashboard.set_edit_mode(self.edit_mode)
             self.update_status_bar()
     
     async def pick_drop_entity(self) -> None:

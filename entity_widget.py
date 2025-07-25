@@ -19,6 +19,7 @@ class EntityWidget(Static):
         self.is_selected = False
         self.is_holding = False
         self.is_being_moved = False
+        self.staged_brightness = None  # For brightness staging
         
         # basic styling
         self.styles.border = ("heavy", "white")
@@ -98,9 +99,14 @@ class EntityWidget(Static):
             
             # format display based on what kind of entity this is
             if self.entity_type == 'light' and self.state == 'on' and self.supports_brightness():
-                brightness = self.attributes.get('brightness', 0)
-                brightness_pct = round(brightness / 255 * 100)
-                state_widget.update(f"State: {self.state} ({brightness_pct}%)")
+                # Use staged brightness if available, otherwise use actual brightness
+                if self.staged_brightness is not None:
+                    brightness_pct = self.staged_brightness
+                    state_widget.update(f"State: {self.state} ({brightness_pct}%)*")  # * indicates staged
+                else:
+                    brightness = self.attributes.get('brightness', 0)
+                    brightness_pct = round(brightness / 255 * 100)
+                    state_widget.update(f"State: {self.state} ({brightness_pct}%)")
             elif self.entity_type == 'sensor':
                 unit = self.attributes.get('unit_of_measurement', '')
                 display_state = f"{self.state} {unit}".strip()
@@ -306,6 +312,39 @@ class EntityWidget(Static):
             
             if success:
                 self.attributes['brightness'] = new_brightness
+                self.update_display()
+                asyncio.create_task(self._verify_state_change())
+            
+            return success
+        except Exception as e:
+            return False
+    
+    def refresh_display(self) -> None:
+        # Refresh the display immediately (for staging)
+        self.update_display()
+    
+    async def set_brightness_direct(self, brightness_pct: int) -> bool:
+        # Set brightness directly to a specific percentage
+        if not self.supports_brightness():
+            return False
+            
+        if self.state == "off":
+            await self.ha_client.call_service("light", "turn_on", self.entity_config.entity)
+            self.state = "on"
+            await asyncio.sleep(0.2)
+        
+        try:
+            new_brightness = round(brightness_pct * 255 / 100)
+            
+            success = await self.ha_client.call_service(
+                "light", "turn_on", 
+                self.entity_config.entity, 
+                {"brightness": new_brightness}
+            )
+            
+            if success:
+                self.attributes['brightness'] = new_brightness
+                self.staged_brightness = None  # Clear staging
                 self.update_display()
                 asyncio.create_task(self._verify_state_change())
             

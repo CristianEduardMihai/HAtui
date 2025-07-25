@@ -45,6 +45,9 @@ class MainTUI(App):
         self.dashboard = None
         self.edit_controller = EditController(self)
         self.last_toggle_time = {}
+        # brightness staging
+        self.staged_brightness = {}
+        self.brightness_commit_scheduled = False
     
     def compose(self) -> ComposeResult:
         yield Header()
@@ -86,6 +89,39 @@ class MainTUI(App):
             
         except Exception as e:
             self.notify(f"Initialization error: {e}", severity="error")
+    
+    async def commit_staged_brightness(self) -> None:
+        # send all staged brightness changes to HA
+        for entity_id, brightness in self.staged_brightness.items():
+            try:
+                widget = None
+                # Find the widget for this entity
+                for w in self.dashboard.widgets_grid.values():
+                    if w.entity_config.entity == entity_id:
+                        widget = w
+                        break
+                
+                if widget:
+                    # Set the brightness in HA
+                    await widget.set_brightness_direct(brightness)
+                    self.notify(f"Set {entity_id} brightness to {brightness}%", severity="information")
+            except Exception as e:
+                self.notify(f"Failed to set brightness for {entity_id}: {e}", severity="error")
+        
+        # Clear staged changes
+        self.staged_brightness.clear()
+    
+    def schedule_brightness_commit(self) -> None:
+        # Only schedule if not already scheduled
+        if not self.brightness_commit_scheduled:
+            self.brightness_commit_scheduled = True
+            # Schedule commit after 1 second of no brightness changes
+            self.set_timer(1.0, self._brightness_commit_callback)
+    
+    async def _brightness_commit_callback(self) -> None:
+        # Reset the flag and commit
+        self.brightness_commit_scheduled = False
+        await self.commit_staged_brightness()
     
     async def load_entities_from_config(self) -> None:
         # load up all the entities from config file
@@ -192,19 +228,32 @@ class MainTUI(App):
         current_time = time.time()
         if brightness_key in self.last_toggle_time:
             time_since_last = current_time - self.last_toggle_time[brightness_key]
-            if time_since_last < 0.1:
+            if time_since_last < 0.05:  # Faster debounce for staging
                 return
                 
         self.last_toggle_time[brightness_key] = current_time
         
-        # Adjust brightness
-        success = await widget.adjust_brightness("up")
-        if success:
-            current_pct = round(widget.attributes.get('brightness', 0) / 255 * 100)
-            
-            self.update_status_with_brightness(widget)
+        # Get current brightness
+        if entity_id in self.staged_brightness:
+            current_brightness = self.staged_brightness[entity_id]
         else:
-            self.notify("Cannot adjust brightness", severity="warning")
+            current_brightness = round(widget.attributes.get('brightness', 0) / 255 * 100)
+        
+        # Increase brightness by 5%
+        new_brightness = min(100, current_brightness + 5)
+        
+        # Stage the brightness change
+        self.staged_brightness[entity_id] = new_brightness
+        
+        # Update widget display immediately for visual feedback
+        widget.staged_brightness = new_brightness
+        widget.refresh_display()
+        
+        # Schedule commit after user stops pressing keys
+        self.schedule_brightness_commit()
+        
+        # Update status bar
+        self.update_status_with_brightness(widget)
     
     async def action_brightness_down(self) -> None:
         import time
@@ -223,20 +272,32 @@ class MainTUI(App):
         current_time = time.time()
         if brightness_key in self.last_toggle_time:
             time_since_last = current_time - self.last_toggle_time[brightness_key]
-            if time_since_last < 0.1:
+            if time_since_last < 0.05:  # Faster debounce for staging
                 return
                 
         self.last_toggle_time[brightness_key] = current_time
         
-        # Adjust brightness
-        success = await widget.adjust_brightness("down")
-        if success:
-            current_pct = round(widget.attributes.get('brightness', 0) / 255 * 100)
-            
-            # Update status
-            self.update_status_with_brightness(widget)
+        # Get current brightness
+        if entity_id in self.staged_brightness:
+            current_brightness = self.staged_brightness[entity_id]
         else:
-            self.notify("Cannot adjust brightness", severity="warning")
+            current_brightness = round(widget.attributes.get('brightness', 0) / 255 * 100)
+        
+        # Decrease brightness by 5%
+        new_brightness = max(0, current_brightness - 5)
+        
+        # Stage the brightness change
+        self.staged_brightness[entity_id] = new_brightness
+        
+        # Update widget display immediately for visual feedback
+        widget.staged_brightness = new_brightness
+        widget.refresh_display()
+        
+        # Schedule commit after user stops pressing keys
+        self.schedule_brightness_commit()
+        
+        # Update status bar
+        self.update_status_with_brightness(widget)
     
     async def action_refresh(self) -> None:
         # manually refresh all entities

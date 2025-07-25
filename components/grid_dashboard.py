@@ -16,13 +16,18 @@ class GridDashboard(Container):
         self.selected_position: Optional[tuple] = None
         self.ghost_entity: Optional[EntityWidget] = None  # entity moving
         self.ghost_position: Optional[tuple] = None  # position of ghost/moving entity
+        self.is_edit_mode: bool = False
+    
+    def get_empty_cell_text(self, row: int, col: int) -> str:
+        action_text = "Press A to add" if self.is_edit_mode else "Press E to edit"
+        return f"[{row},{col}]\n\nEmpty\n{action_text}"
     
     def compose(self) -> ComposeResult:
         with Grid(id="entity-grid"):
             # fill grid with empty cells first
             for row in range(self.rows):
                 for col in range(self.cols):
-                    yield Static(f"[{row},{col}]\n\nEmpty\nPress E to edit", 
+                    yield Static(self.get_empty_cell_text(row, col), 
                                id=f"cell-{row}-{col}", 
                                classes="empty-cell")
     
@@ -64,7 +69,7 @@ class GridDashboard(Container):
             cell_index = len(grid.children)
         
         # put empty cell back
-        empty_cell = Static(f"[{row},{col}]\n\nEmpty\nPress E to edit", 
+        empty_cell = Static(self.get_empty_cell_text(row, col), 
                           id=f"cell-{row}-{col}", 
                           classes="empty-cell")
         
@@ -107,6 +112,18 @@ class GridDashboard(Container):
         # just grab whatever's at this spot
         return self.widgets_grid.get((row, col))
     
+    def set_edit_mode(self, is_edit_mode: bool) -> None:
+        if self.is_edit_mode != is_edit_mode:
+            self.is_edit_mode = is_edit_mode
+            for row in range(self.rows):
+                for col in range(self.cols):
+                    if (row, col) not in self.widgets_grid:
+                        try:
+                            empty_cell = self.query_one(f"#cell-{row}-{col}")
+                            empty_cell.update(self.get_empty_cell_text(row, col))
+                        except:
+                            pass
+    
     def set_ghost_entity(self, original_entity: Optional[EntityWidget], row: int = -1, col: int = -1) -> None:
         # show a "ghost" preview when moving entities around
         # clear old ghost first
@@ -117,7 +134,7 @@ class GridDashboard(Container):
                 # put empty cell back so we don't break the grid
                 if (old_row, old_col) not in self.widgets_grid:
                     grid = self.query_one("#entity-grid", Grid)
-                    empty_cell = Static(f"[{old_row},{old_col}]\n\nEmpty\nPress E to edit", 
+                    empty_cell = Static(self.get_empty_cell_text(old_row, old_col), 
                                       id=f"cell-{old_row}-{old_col}", 
                                       classes="empty-cell")
                     # figure out where to put it
