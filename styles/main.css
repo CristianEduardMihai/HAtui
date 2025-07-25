@@ -109,3 +109,35 @@ EntityBrowserScreen > Container {
 .position-input:focus {
     border: thick $accent;
 }
+
+/* Name Editor Modal */
+NameEditorScreen {
+    align: center middle;
+}
+
+#name-editor-dialog {
+    background: $panel;
+    border: thick $primary;
+    width: 60;
+    height: auto;
+    padding: 2;
+}
+
+#name-editor-dialog > Label {
+    text-align: center;
+    margin-bottom: 1;
+}
+
+#name-editor-dialog > Input {
+    margin: 1 0;
+}
+
+#name-editor-dialog > Horizontal {
+    align: center middle;
+    margin-top: 1;
+}
+
+#name-editor-dialog Button {
+    margin: 0 1;
+    min-width: 10;
+}

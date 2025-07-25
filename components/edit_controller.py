@@ -4,6 +4,7 @@ from textual.widgets import Static
 from entity_widget import EntityWidget
 from config_manager import ConfigManager, EntityConfig
 from components.entity_browser import EntityBrowserScreen
+from components.name_editor import NameEditorScreen
 
 if TYPE_CHECKING:
     from components.main_tui import MainTUI
@@ -174,11 +175,26 @@ class EditController:
         
         if result:
             try:
+                # Get entity info from HA to set initial display name
+                entity_id = result["entity"]
+                state_data = await self.app.ha_client.get_state(entity_id)
+                ha_friendly_name = None
+                
+                if state_data and "attributes" in state_data:
+                    ha_friendly_name = state_data["attributes"].get("friendly_name")
+                
                 # add to config
                 self.app.config_manager.add_entity(result["entity"], result["row"], result["col"])
                 
                 # create widget and add to dashboard
                 entity_config = EntityConfig(result["entity"], [result["row"], result["col"]])
+                
+                # Set the display name from HA if available
+                if ha_friendly_name:
+                    entity_config.display_name = ha_friendly_name
+                    # Also update in config
+                    self.app.config_manager.update_entity_display_name(entity_id, ha_friendly_name)
+                
                 widget = EntityWidget(entity_config, self.app.ha_client)
                 self.app.dashboard.add_entity_widget(widget, result["row"], result["col"])
                 await widget.refresh_state()
@@ -207,6 +223,40 @@ class EditController:
                 self.app.notify(f"Error removing entity: {e}", severity="error")
         else:
             self.app.notify("No entity at current position to remove", severity="warning")
+    
+    def edit_entity_name(self) -> None:
+        if not self.edit_mode:
+            return
+        
+        widget = self.app.dashboard.get_widget_at(self.selected_row, self.selected_col)
+        if widget:
+            # Get current display name
+            current_name = widget.entity_config.display_name or ""
+            entity_id = widget.entity_config.entity
+            
+            self.app.run_worker(self._run_name_editor(widget, current_name, entity_id))
+        else:
+            self.app.notify("No entity at current position to edit", severity="warning")
+    
+    async def _run_name_editor(self, widget: EntityWidget, current_name: str, entity_id: str) -> None:
+        # Run the name editor dialog
+        editor = NameEditorScreen(current_name, entity_id)
+        result = await self.app.push_screen_wait(editor)
+        
+        if result is not None:
+            try:
+                # Update config
+                if self.app.config_manager.update_entity_display_name(entity_id, result):
+                    # Update widget
+                    widget.update_display_name(result)
+                    
+                    display_text = result if result.strip() else "default name"
+                    self.app.notify(f"Updated display name to: {display_text}", severity="information")
+                    self.update_status_bar()
+                else:
+                    self.app.notify("Failed to update display name in config", severity="error")
+            except Exception as e:
+                self.app.notify(f"Error updating display name: {e}", severity="error")
     
     def move_up(self) -> None:
         # move selection up
@@ -263,7 +313,7 @@ class EditController:
                 widget = self.app.dashboard.get_widget_at(self.selected_row, self.selected_col)
                 if widget:
                     entity_name = widget.friendly_name
-                    status.update(f"[EDIT] {entity_name} | ↑↓←→: Navigate | Enter: Pick | a: Add | Del: Remove | e: Exit Edit")
+                    status.update(f"[EDIT] {entity_name} | ↑↓←→: Navigate | Enter: Pick | a: Add | n: Edit Name | Del: Remove | e: Exit Edit")
                 else:
                     status.update(f"[EDIT] Empty cell | ↑↓←→: Navigate | a: Add Entity | e: Exit Edit")
         else:

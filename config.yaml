@@ -1,48 +1,55 @@
 dashboard:
   cols: 3
   entities:
-  - entity: light.bedroom1_main_desk_alarm_light
+  - display_name: null
+    entity: light.bedroom1_main_desk_alarm_light
     icon: null
     position:
     - 0
     - 1
     type: toggle
-  - entity: light.light_switch1_light
+  - display_name: Light
+    entity: light.light_switch1_light
     icon: null
     position:
     - 0
     - 0
     type: toggle
-  - entity: switch.relay_1
+  - display_name: Faq
+    entity: switch.relay_1
     icon: null
     position:
     - 2
     - 1
     type: auto
-  - entity: switch.relay_1
+  - display_name: Faq
+    entity: switch.relay_1
     icon: null
     position:
     - 0
     - 2
     type: auto
-  - entity: light.stalinskaya
-    icon: null
-    position:
-    - 2
-    - 2
-    type: auto
-  - entity: light.jagermeister
+  - display_name: JAGAMASTERR
+    entity: light.jagermeister
     icon: null
     position:
     - 1
     - 0
     type: auto
-  - entity: light.ceiling_light
+  - display_name: null
+    entity: light.ceiling_light
     icon: null
     position:
     - 2
     - 0
     type: light
+  - display_name: Stalinskayaaa
+    entity: light.stalinskaya
+    icon: null
+    position:
+    - 1
+    - 1
+    type: auto
   name: Main Dashboard
   refresh_interval: 3
   rows: 3

@@ -11,6 +11,7 @@ from entity_widget import EntityWidget
 from components.entity_browser import EntityBrowserScreen
 from components.grid_dashboard import GridDashboard
 from components.edit_controller import EditController
+from components.name_editor import NameEditorScreen
 
 
 class MainTUI(App):
@@ -35,6 +36,7 @@ class MainTUI(App):
         Binding("a", "add_entity", "Add"),
         Binding("delete", "remove_entity", "Remove"),
         Binding("enter", "pick_drop_entity", "Pick/Drop"),
+        Binding("n", "edit_name", "Edit Name"),
         Binding("escape", "exit_edit", "Exit"),
     ]
     
@@ -182,6 +184,11 @@ class MainTUI(App):
         if not self.edit_controller.edit_mode:
             return
         await self.edit_controller.remove_entity()
+    
+    def action_edit_name(self) -> None:
+        if not self.edit_controller.edit_mode:
+            return
+        self.edit_controller.edit_entity_name()
     
     def action_move_up(self) -> None:
         # Move selection up

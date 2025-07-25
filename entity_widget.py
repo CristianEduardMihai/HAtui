@@ -13,7 +13,10 @@ class EntityWidget(Static):
         self.entity_config = entity_config
         self.ha_client = ha_client
         self.state = "unknown"
-        self.friendly_name = entity_config.entity.split('.')[-1].replace('_', ' ').title()
+        if entity_config.display_name:
+            self.friendly_name = entity_config.display_name
+        else:
+            self.friendly_name = entity_config.entity.split('.')[-1].replace('_', ' ').title()
         self.attributes = {}
         self.entity_type = self._detect_entity_type()
         self.is_selected = False
@@ -174,8 +177,10 @@ class EntityWidget(Static):
             if state_data:
                 self.state = state_data.get("state", "unknown")
                 self.attributes = state_data.get("attributes", {})
-                self.friendly_name = self.attributes.get("friendly_name", 
-                    self.entity_config.entity.split('.')[-1].replace('_', ' ').title())
+                # Only update friendly_name from HA if no custom display name is set
+                if not self.entity_config.display_name:
+                    self.friendly_name = self.attributes.get("friendly_name", 
+                        self.entity_config.entity.split('.')[-1].replace('_', ' ').title())
                 self.update_display()
         except Exception as e:
             self.state = "error"
@@ -351,6 +356,18 @@ class EntityWidget(Static):
             return success
         except Exception as e:
             return False
+    
+    def update_display_name(self, new_name: str) -> None:
+        self.entity_config.display_name = new_name.strip() if new_name.strip() else None
+        if self.entity_config.display_name:
+            self.friendly_name = self.entity_config.display_name
+        else:
+            ha_name = self.attributes.get("friendly_name")
+            if ha_name:
+                self.friendly_name = ha_name
+            else:
+                self.friendly_name = self.entity_config.entity.split('.')[-1].replace('_', ' ').title()
+        self.update_display()
 
     def on_click(self, event: Click) -> None:
         # Forward click events to the main app for handling

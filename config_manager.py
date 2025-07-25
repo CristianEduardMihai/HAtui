@@ -12,6 +12,7 @@ class EntityConfig:
     position: List[int]  # [row, col]
     type: str = "auto"  # auto, toggle, sensor, climate
     icon: Optional[str] = None
+    display_name: Optional[str] = None
     
     @property
     def row(self) -> int:
@@ -157,6 +158,20 @@ class ConfigManager:
         for entity in self.config.dashboard.entities:
             if entity.entity == entity_id:
                 entity.position = [new_row, new_col]  # [row, col]
+                self.save_config()
+                return True
+        
+        return False
+    
+    def update_entity_display_name(self, entity_id: str, display_name: str) -> bool:
+        # Update the display name for an entity
+        if not self.config:
+            return False
+        
+        # Find the entity and update its display name
+        for entity in self.config.dashboard.entities:
+            if entity.entity == entity_id:
+                entity.display_name = display_name.strip() if display_name.strip() else None
                 self.save_config()
                 return True
         
