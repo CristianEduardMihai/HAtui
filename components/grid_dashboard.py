@@ -1,12 +1,9 @@
-import logging
 from textual.containers import Container, Grid
 from textual.widgets import Static
 from textual.app import ComposeResult
 from textual.events import Click
 from typing import Dict, Optional
 from entity_widget import EntityWidget
-
-logger = logging.getLogger(__name__)
 
 
 class GridDashboard(Container):
@@ -167,7 +164,6 @@ class GridDashboard(Container):
     
     def on_click(self, event: Click) -> None:
         # forward clicks to main app
-        logger.debug(f"GridDashboard click - Event: {event}, Widget: {event.widget}")
         # Let the click bubble up to the main app for handling
         event.bubble = True
         event.stop()

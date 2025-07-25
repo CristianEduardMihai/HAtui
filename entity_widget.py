@@ -1,12 +1,9 @@
 import asyncio
-import logging
 from textual.widgets import Static
 from textual.reactive import reactive
 from textual.events import Click
 from ha_client import HomeAssistantClient
 from config_manager import EntityConfig
-
-logger = logging.getLogger(__name__)
 
 class EntityWidget(Static):
     # shows and controls home assistant entities
@@ -36,16 +33,21 @@ class EntityWidget(Static):
             return self.entity_config.type
         
         domain = self.entity_config.entity.split('.')[0]
-        if domain in ['light', 'switch', 'input_boolean']:
+        # Auto-detecting type based on domain
+        
+        if domain == 'light':
+            # detected light type
+            return 'light'
+        elif domain in ['switch', 'input_boolean', 'fan', 'cover', 'media_player']:
             return 'toggle'
         elif domain in ['sensor', 'binary_sensor']:
             return 'sensor'
         elif domain == 'climate':
             return 'climate'
-        elif domain in ['script', 'automation']:
+        elif domain in ['script', 'automation', 'scene', 'button']:
             return 'action'
         else:
-            return 'sensor'  # when in doubt, treat as sensor
+            return 'toggle'
     
     def _get_icon(self) -> str:
         # pick an icon for the entity
@@ -72,10 +74,14 @@ class EntityWidget(Static):
     def compose(self):
         safe_id = self._get_safe_id()
         icon = self._get_icon()
+        entity_id = self.entity_config.entity
+        
         yield Static(f"{icon} {self.friendly_name}", id=f"title-{safe_id}")
         yield Static(f"State: {self.state}", id=f"state-{safe_id}")
         
-        if self.entity_type == 'toggle':
+        if self.entity_type == 'light':
+            yield Static("SPACE: Toggle | CTRL+↑↓: Brightness", id=f"help-{safe_id}")
+        elif self.entity_type == 'toggle':
             yield Static("SPACE: Toggle", id=f"help-{safe_id}")
         elif self.entity_type == 'action':
             yield Static("SPACE: Run", id=f"help-{safe_id}")
@@ -91,7 +97,11 @@ class EntityWidget(Static):
             state_widget = self.query_one(f"#state-{safe_id}", Static)
             
             # format display based on what kind of entity this is
-            if self.entity_type == 'sensor':
+            if self.entity_type == 'light' and self.state == 'on' and self.supports_brightness():
+                brightness = self.attributes.get('brightness', 0)
+                brightness_pct = round(brightness / 255 * 100)
+                state_widget.update(f"State: {self.state} ({brightness_pct}%)")
+            elif self.entity_type == 'sensor':
                 unit = self.attributes.get('unit_of_measurement', '')
                 display_state = f"{self.state} {unit}".strip()
                 state_widget.update(f"Value: {display_state}")
@@ -168,7 +178,34 @@ class EntityWidget(Static):
     async def toggle_entity(self) -> bool:
         # try to toggle or activate this entity
         try:
-            if self.entity_type == 'toggle':
+            if self.entity_type == 'light':
+                # Handle light entities
+                old_state = self.state
+                self.state = "on" if old_state == "off" else "off"
+                self.update_display()
+
+                domain = "light"
+                service = "turn_on" if old_state == "off" else "turn_off"
+                
+                success = await self.ha_client.call_service(domain, service, self.entity_config.entity)
+                
+                if not success:
+                    success = await self.ha_client.toggle_entity(self.entity_config.entity)
+                    if not success:
+                        self.state = old_state
+                        self.update_display()
+                    else:
+                        # Verify change
+                        await asyncio.sleep(0.2)
+                        await self.refresh_state()
+                else:
+                    # Verify change
+                    await asyncio.sleep(0.2)
+                    await self.refresh_state()
+                    
+                return success
+                
+            elif self.entity_type == 'toggle':
                 # instant UI update - flip state immediately for zero-delay feedback
                 old_state = self.state
                 self.state = "on" if old_state == "off" else "off"
@@ -186,15 +223,28 @@ class EntityWidget(Static):
                     await self.refresh_state()
                 return success
             else:
-                return False  # can't toggle sensors
+                # can't toggle sensors
+                return False
                 
-        except Exception:
+        except Exception as e:
+            # Error toggling entity
             return False
     
     async def _send_toggle_command(self, old_state: str) -> None:
         # send actual toggle command in background
         try:
-            success = await self.ha_client.toggle_light(self.entity_config.entity)
+            domain = self.entity_config.entity.split('.')[0]
+            success = False
+            
+            # Try to use the toggle service first - works for most entity types
+            try:
+                success = await self.ha_client.toggle_entity(self.entity_config.entity)
+            except Exception as e:
+                if domain == 'light':
+                    success = await self.ha_client.toggle_light(self.entity_config.entity)
+                else:
+                    service = "turn_on" if old_state == "off" else "turn_off"
+                    success = await self.ha_client.call_service(domain, service, self.entity_config.entity)
             
             if not success:
                 # if command failed, revert UI
@@ -205,7 +255,7 @@ class EntityWidget(Static):
                 await asyncio.sleep(0.1)
                 await self.refresh_state()
                 
-        except Exception:
+        except Exception as e:
             # if anything goes wrong, revert the UI
             self.state = old_state
             self.update_display()
@@ -214,10 +264,57 @@ class EntityWidget(Static):
         # verify state change in background after a short delay
         await asyncio.sleep(0.1)  # very short delay to let HA process
         await self.refresh_state()
+    
+    def supports_brightness(self) -> bool:
+        if self.entity_type != 'light':
+            return False
+        if 'brightness' in self.attributes:
+            return True
+        
+        supported_features = self.attributes.get('supported_features', 0)
+        has_brightness = (supported_features & 1) > 0
+        
+        # Just assume it supports
+        if not has_brightness:
+            return True
+            
+        return has_brightness
+    
+    async def adjust_brightness(self, direction: str) -> bool:
+        if not self.supports_brightness():
+            return False
+            
+        if self.state == "off":
+            await self.ha_client.call_service("light", "turn_on", self.entity_config.entity)
+            self.state = "on"
+            await asyncio.sleep(0.2)
+        
+        try:
+            current = self.attributes.get('brightness', 0)
+            current_pct = round(current / 255 * 100)
+            if direction == "up":
+                new_pct = min(100, current_pct + 5)
+            else: 
+                new_pct = max(5, current_pct - 5)
+            new_brightness = round(new_pct * 255 / 100)
+            
+            success = await self.ha_client.call_service(
+                "light", "turn_on", 
+                self.entity_config.entity, 
+                {"brightness": new_brightness}
+            )
+            
+            if success:
+                self.attributes['brightness'] = new_brightness
+                self.update_display()
+                asyncio.create_task(self._verify_state_change())
+            
+            return success
+        except Exception as e:
+            return False
 
     def on_click(self, event: Click) -> None:
         # Forward click events to the main app for handling
-        logger.debug(f"EntityWidget click - Entity: {self.entity_config.entity}, Event: {event}")
         # bubble the click event up to the main app
         # main app will handle entity selection/toggle logic
         event.bubble = True

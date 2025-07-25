@@ -37,6 +37,12 @@ dashboard:
     - 1
     - 0
     type: auto
+  - entity: light.ceiling_light
+    icon: null
+    position:
+    - 2
+    - 1
+    type: light
   name: Main Dashboard
   refresh_interval: 3
   rows: 3

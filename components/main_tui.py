@@ -3,6 +3,7 @@ import os
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static
 from textual.binding import Binding
+from textual.events import Key
 from typing import Optional
 from ha_client import HomeAssistantClient
 from config_manager import ConfigManager, EntityConfig
@@ -17,7 +18,9 @@ class MainTUI(App):
     CSS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "styles", "main.css")
     
     BINDINGS = [
-        Binding("space", "toggle_entity", "Toggle"),
+        Binding("space", "handle_space_key", "Toggle Entity"),
+        Binding("ctrl+up", "brightness_up", "Brightness Up"),
+        Binding("ctrl+down", "brightness_down", "Brightness Down"),
         Binding("r", "refresh", "Refresh"),
         Binding("e", "edit_mode", "Edit Mode"),
         Binding("a", "add_entity", "Add Entity"),
@@ -37,6 +40,7 @@ class MainTUI(App):
         self.ha_client = None
         self.dashboard = None
         self.edit_controller = EditController(self)
+        self.last_toggle_time = {} 
     
     def compose(self) -> ComposeResult:
         yield Header()
@@ -140,36 +144,143 @@ class MainTUI(App):
     def action_move_up(self) -> None:
         # Move selection up
         self.edit_controller.move_up()
+        # Update status bar if a light is selected
+        widget = self.dashboard.get_widget_at(self.edit_controller.selected_row, self.edit_controller.selected_col)
+        self.update_status_with_brightness(widget)
     
     def action_move_down(self) -> None:
         # Move selection down
         self.edit_controller.move_down()
+        # Update status bar if a light is selected
+        widget = self.dashboard.get_widget_at(self.edit_controller.selected_row, self.edit_controller.selected_col)
+        self.update_status_with_brightness(widget)
     
     def action_move_left(self) -> None:
         # Move selection left
         self.edit_controller.move_left()
+        # Update status bar if a light is selected
+        widget = self.dashboard.get_widget_at(self.edit_controller.selected_row, self.edit_controller.selected_col)
+        self.update_status_with_brightness(widget)
     
     def action_move_right(self) -> None:
         # Move selection right
         self.edit_controller.move_right()
-    
-    async def action_toggle_entity(self) -> None:
-        # toggle entity at current position
+        # Update status bar if a light is selected
+        widget = self.dashboard.get_widget_at(self.edit_controller.selected_row, self.edit_controller.selected_col)
+        self.update_status_with_brightness(widget)
+        
+    async def action_brightness_up(self) -> None:
+        # Increase brightness of selected light
+        import time
+        
         if self.edit_controller.edit_mode:
-            return  # don't toggle in edit mode
+            return
         
         widget = self.dashboard.get_widget_at(self.edit_controller.selected_row, self.edit_controller.selected_col)
-        if widget:
-            success = await widget.toggle_entity()
-            if success:
-                self.notify("Entity toggled!", severity="information")
-            else:
-                self.notify("Cannot toggle this entity", severity="warning")
+        if not widget or not widget.supports_brightness():
+            return
+            
+        entity_id = widget.entity_config.entity
+        brightness_key = f"{entity_id}_brightness_up"
+        
+        # Check for debouncing
+        current_time = time.time()
+        if brightness_key in self.last_toggle_time:
+            time_since_last = current_time - self.last_toggle_time[brightness_key]
+            if time_since_last < 0.1:
+                return
+                
+        self.last_toggle_time[brightness_key] = current_time
+        
+        # Adjust brightness
+        success = await widget.adjust_brightness("up")
+        if success:
+            current_pct = round(widget.attributes.get('brightness', 0) / 255 * 100)
+            
+            self.update_status_with_brightness(widget)
+        else:
+            self.notify("Cannot adjust brightness", severity="warning")
+    
+    async def action_brightness_down(self) -> None:
+        # Decrease brightness of selected light
+        import time
+        
+        if self.edit_controller.edit_mode:
+            return
+        
+        widget = self.dashboard.get_widget_at(self.edit_controller.selected_row, self.edit_controller.selected_col)
+        if not widget or not widget.supports_brightness():
+            return
+            
+        entity_id = widget.entity_config.entity
+        brightness_key = f"{entity_id}_brightness_down"
+        
+        # debouncing
+        current_time = time.time()
+        if brightness_key in self.last_toggle_time:
+            time_since_last = current_time - self.last_toggle_time[brightness_key]
+            if time_since_last < 0.1:
+                return
+                
+        self.last_toggle_time[brightness_key] = current_time
+        
+        # Adjust brightness
+        success = await widget.adjust_brightness("down")
+        if success:
+            current_pct = round(widget.attributes.get('brightness', 0) / 255 * 100)
+            
+            # Update status
+            self.update_status_with_brightness(widget)
+        else:
+            self.notify("Cannot adjust brightness", severity="warning")
     
     async def action_refresh(self) -> None:
         # manually refresh all entities
         await self.auto_refresh()
         self.notify("Refreshed all entities!", severity="information")
+    
+    def update_status_with_brightness(self, widget) -> None:
+        if widget and widget.entity_type == 'light' and widget.supports_brightness() and widget.state == 'on':
+            brightness_pct = round(widget.attributes.get('brightness', 0) / 255 * 100)
+            status_bar = self.query_one("#status-bar", Static)
+            if self.edit_controller.edit_mode:
+                status_bar.update(f"Mode: Edit | CTRL+↑↓: Brightness ({brightness_pct}%)")
+            else:
+                status_bar.update(f"Mode: View | CTRL+↑↓: Brightness ({brightness_pct}%)")
+        else:
+            self.edit_controller.update_status_bar()
+    
+    
+    async def action_handle_space_key(self) -> None:
+        import time
+        if self.edit_controller.edit_mode:
+            return
+        widget = self.dashboard.get_widget_at(self.edit_controller.selected_row, self.edit_controller.selected_col)
+        if not widget:
+            return
+            
+        entity_id = widget.entity_config.entity
+        entity_type = widget.entity_type
+    
+        # debouncing
+        current_time = time.time()
+        if entity_id in self.last_toggle_time:
+            time_since_last_toggle = current_time - self.last_toggle_time[entity_id]            
+            if entity_type == 'light' and time_since_last_toggle < 0.5:
+                return
+            elif time_since_last_toggle < 0.2:
+                return
+        
+        self.last_toggle_time[entity_id] = current_time
+        
+        if entity_type != 'light':
+            success = await widget.toggle_entity()
+            if success:
+                self.notify(f"{entity_id} toggled!", severity="information")
+            else:
+                self.notify(f"Cannot toggle {entity_id}", severity="warning")
+            return
+            
     
     async def on_unmount(self) -> None:
         # clean up HTTP client when app shuts down

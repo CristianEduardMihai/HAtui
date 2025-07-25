@@ -64,9 +64,9 @@ class HomeAssistantClient:
         try:
             response = await client.get(url, headers=self.headers)
             response.raise_for_status()
-            return response.json()
+            state_data = response.json()
+            return state_data
         except httpx.HTTPError as e:
-            print(f"Error getting state for {entity_id}: {e}")
             return None
     
     async def call_service(self, domain: str, service: str, entity_id: str, 
@@ -84,11 +84,16 @@ class HomeAssistantClient:
             response.raise_for_status()
             return True
         except httpx.HTTPError as e:
-            print(f"Error calling service {domain}.{service} for {entity_id}: {e}")
+            # Error handling without logging
             return False
     
     async def toggle_light(self, entity_id: str) -> bool:
         return await self.call_service("light", "toggle", entity_id)
+    
+    async def toggle_entity(self, entity_id: str) -> bool:
+        # generic toggle for any entity type
+        domain = entity_id.split('.')[0]
+        return await self.call_service(domain, "toggle", entity_id)
     
     async def turn_on_light(self, entity_id: str) -> bool:
         return await self.call_service("light", "turn_on", entity_id)
@@ -122,3 +127,11 @@ class HomeAssistantClient:
         except httpx.HTTPError as e:
             print(f"Error getting all entities: {e}")
             return []
+    
+    async def set_brightness(self, entity_id: str, brightness: int) -> bool:
+        # Set brightness for a light entity (0-255)
+        return await self.call_service(
+            "light", "turn_on", 
+            entity_id, 
+            {"brightness": brightness}
+        )
