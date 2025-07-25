@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class EditController:
-    """Handles all edit mode functionality for the dashboard"""
+    # Handles all edit mode functionality for the dashboard
     
     def __init__(self, app: 'MainTUI'):
         self.app = app
@@ -21,7 +21,7 @@ class EditController:
         self.holding_from_pos: Optional[tuple] = None
     
     def toggle_edit_mode(self) -> None:
-        """Toggle edit mode on/off"""
+        # Toggle edit mode on/off
         self.edit_mode = not self.edit_mode
         if self.edit_mode:
             self.app.dashboard.set_selected_position(self.selected_row, self.selected_col)
@@ -31,7 +31,7 @@ class EditController:
         self.app.notify(f"Edit mode: {'ON' if self.edit_mode else 'OFF'}", severity="information")
     
     def exit_edit_mode(self) -> None:
-        """Exit edit mode and clear any held entities"""
+        # Exit edit mode and clear any held entities
         if self.edit_mode:
             # If holding an entity, clear the holding state and ghost
             if self.holding_entity:
@@ -45,7 +45,7 @@ class EditController:
             self.update_status_bar()
     
     async def pick_drop_entity(self) -> None:
-        """Pick up or drop an entity for moving"""
+        # Pick up/drop entity for moving
         if not self.edit_mode:
             return
         
@@ -68,7 +68,7 @@ class EditController:
                 self.update_status_bar()
     
     async def _drop_entity_at(self, row: int, col: int) -> None:
-        """Drop the held entity at specified position"""
+        # Drop the held entity at specified position
         if not self.holding_entity:
             return
         
@@ -151,8 +151,8 @@ class EditController:
         
         self.update_status_bar()
     
-    async def add_entity(self) -> None:
-        """Open entity browser to add new entity"""
+    def add_entity(self) -> None:
+        # open entity browser to add new entity
         if not self.edit_mode:
             self.app.notify("Enter edit mode first (press 'e')", severity="warning")
             return
@@ -160,8 +160,12 @@ class EditController:
         # get positions that are already taken
         occupied = set(self.app.dashboard.widgets_grid.keys())
         
-        # open the entity browser
-        browser = EntityBrowserScreen(self.app.ha_client, occupied)
+        # Run the entity browser in a worker context
+        self.app.run_worker(self._run_entity_browser(occupied))
+    
+    async def _run_entity_browser(self, occupied: set) -> None:
+        # run the entity browser
+        browser = EntityBrowserScreen(self.app.ha_client, occupied, self.selected_row, self.selected_col)
         result = await self.app.push_screen_wait(browser)
         
         if result:
@@ -181,7 +185,7 @@ class EditController:
                 self.app.notify(f"Error adding entity: {e}", severity="error")
     
     async def remove_entity(self) -> None:
-        """Remove entity at current selected position"""
+        # Remove entity at current selected position
         if not self.edit_mode:
             return
         
@@ -189,14 +193,19 @@ class EditController:
         if widget:
             entity_id = widget.entity_config.entity
             
-            # remove from config and dashboard
-            self.app.config_manager.remove_entity(entity_id)
-            self.app.dashboard.remove_entity_widget(self.selected_row, self.selected_col)
-            
-            self.app.notify(f"Removed {entity_id}", severity="information")
+            try:
+                # remove from config and dashboard
+                self.app.config_manager.remove_entity(entity_id)
+                self.app.dashboard.remove_entity_widget(self.selected_row, self.selected_col)
+                
+                self.app.notify(f"Removed {entity_id}", severity="information")
+            except Exception as e:
+                self.app.notify(f"Error removing entity: {e}", severity="error")
+        else:
+            self.app.notify("No entity at current position to remove", severity="warning")
     
     def move_up(self) -> None:
-        """Move selection up"""
+        # move selection up
         if self.selected_row > 0:
             self.selected_row -= 1
             if not self.holding_entity:
@@ -207,7 +216,7 @@ class EditController:
             self.update_status_bar()
     
     def move_down(self) -> None:
-        """Move selection down"""
+        # move down
         if self.selected_row < self.app.dashboard.rows - 1:
             self.selected_row += 1
             if not self.holding_entity:
@@ -218,7 +227,7 @@ class EditController:
             self.update_status_bar()
     
     def move_left(self) -> None:
-        """Move selection left"""
+        # move left
         if self.selected_col > 0:
             self.selected_col -= 1
             if not self.holding_entity:
@@ -229,7 +238,7 @@ class EditController:
             self.update_status_bar()
     
     def move_right(self) -> None:
-        """Move selection right"""
+        # move right
         if self.selected_col < self.app.dashboard.cols - 1:
             self.selected_col += 1
             if not self.holding_entity:
@@ -240,7 +249,7 @@ class EditController:
             self.update_status_bar()
     
     def update_status_bar(self) -> None:
-        """Update status bar with current edit mode info"""
+        # update status bar with current edit mode info
         status = self.app.query_one("#status-bar", Static)
         if self.edit_mode:
             if self.holding_entity:

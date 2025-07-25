@@ -13,6 +13,30 @@ dashboard:
     - 0
     - 0
     type: toggle
+  - entity: switch.relay_1
+    icon: null
+    position:
+    - 1
+    - 1
+    type: auto
+  - entity: switch.relay_1
+    icon: null
+    position:
+    - 0
+    - 2
+    type: auto
+  - entity: light.stalinskaya
+    icon: null
+    position:
+    - 2
+    - 2
+    type: auto
+  - entity: light.jagermeister
+    icon: null
+    position:
+    - 1
+    - 0
+    type: auto
   name: Main Dashboard
   refresh_interval: 3
   rows: 3

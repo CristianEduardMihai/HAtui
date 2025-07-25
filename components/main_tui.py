@@ -87,14 +87,35 @@ class MainTUI(App):
             return
         
         for entity_config in config.dashboard.entities:
-            widget = EntityWidget(entity_config, self.ha_client)
-            self.dashboard.add_entity_widget(widget, entity_config.row, entity_config.col)
-            await widget.refresh_state()
+            # Validate position is within grid bounds
+            if (entity_config.row >= self.dashboard.rows or 
+                entity_config.col >= self.dashboard.cols or
+                entity_config.row < 0 or entity_config.col < 0):
+                self.notify(f"Skipping {entity_config.entity}: position ({entity_config.row}, {entity_config.col}) is outside grid bounds", 
+                           severity="warning")
+                continue
+            
+            try:
+                widget = EntityWidget(entity_config, self.ha_client)
+                self.dashboard.add_entity_widget(widget, entity_config.row, entity_config.col)
+                await widget.refresh_state()
+            except Exception as e:
+                self.notify(f"Error loading entity {entity_config.entity}: {e}", severity="error")
     
     async def auto_refresh(self) -> None:
         # refresh all entity states automatically
-        for widget in self.dashboard.widgets_grid.values():
-            await widget.refresh_state()
+        try:
+            # Create a copy of the values to avoid dictionary changed during iteration
+            widgets_to_refresh = list(self.dashboard.widgets_grid.values())
+            for widget in widgets_to_refresh:
+                try:
+                    await widget.refresh_state()
+                except Exception as e:
+                    # Skip widgets that might have been removed or are in an invalid state
+                    self.notify(f"Skipping refresh for widget: {e}", severity="warning")
+        except Exception as e:
+            # Handle any other errors in auto-refresh
+            self.notify(f"Auto-refresh error: {e}", severity="error")
     
     def action_edit_mode(self) -> None:
         # toggle edit mode on/off
@@ -108,9 +129,9 @@ class MainTUI(App):
         # pick up or drop an entity for moving
         await self.edit_controller.pick_drop_entity()
     
-    async def action_add_entity(self) -> None:
+    def action_add_entity(self) -> None:
         # open entity browser to add new entity
-        await self.edit_controller.add_entity()
+        self.edit_controller.add_entity()
     
     async def action_remove_entity(self) -> None:
         # remove entity at current selected position

@@ -1,11 +1,15 @@
 import asyncio
+import logging
 from textual.widgets import Static
 from textual.reactive import reactive
+from textual.events import Click
 from ha_client import HomeAssistantClient
 from config_manager import EntityConfig
 
+logger = logging.getLogger(__name__)
+
 class EntityWidget(Static):
-    # widget for showing and controlling HA entities
+    # shows and controls home assistant entities
     
     def __init__(self, entity_config: EntityConfig, ha_client: HomeAssistantClient):
         super().__init__()
@@ -27,7 +31,7 @@ class EntityWidget(Static):
         self.styles.height = 6
     
     def _detect_entity_type(self) -> str:
-        # figure out what kind of entity this is
+        # figure out what type of entity this is
         if self.entity_config.type != "auto":
             return self.entity_config.type
         
@@ -44,7 +48,7 @@ class EntityWidget(Static):
             return 'sensor'  # when in doubt, treat as sensor
     
     def _get_icon(self) -> str:
-        # pick an icon for this entity type
+        # pick an icon for the entity
         if self.entity_config.icon:
             return self.entity_config.icon
         
@@ -62,7 +66,7 @@ class EntityWidget(Static):
         return icons.get(domain, '❓')
     
     def _get_safe_id(self) -> str:
-        # make entity ID safe for HTML/CSS by replacing dots and underscores
+        # clean up entity ID for html/css
         return self.entity_config.entity.replace('.', '-').replace('_', '-')
     
     def compose(self):
@@ -210,3 +214,10 @@ class EntityWidget(Static):
         # verify state change in background after a short delay
         await asyncio.sleep(0.1)  # very short delay to let HA process
         await self.refresh_state()
+
+    def on_click(self, event: Click) -> None:
+        # Forward click events to the main app for handling
+        logger.debug(f"EntityWidget click - Entity: {self.entity_config.entity}, Event: {event}")
+        # bubble the click event up to the main app
+        # main app will handle entity selection/toggle logic
+        event.bubble = True

@@ -50,8 +50,8 @@ EntityBrowserScreen {
 EntityBrowserScreen > Container {
     background: $panel;
     border: thick $primary;
-    width: 60;
-    height: 20;
+    width: 90;
+    height: 40;
     padding: 2;
 }
 
@@ -59,4 +59,53 @@ EntityBrowserScreen > Container {
     text-align: center;
     text-style: bold;
     margin-bottom: 1;
+    color: $accent;
+}
+
+#help-text {
+    text-align: center;
+    color: $text-muted;
+    margin-bottom: 1;
+}
+
+#search-input {
+    margin-bottom: 1;
+    width: 100%;
+}
+
+#search-input:focus {
+    border: thick $accent;
+}
+
+#results-label {
+    margin-top: 1;
+    margin-bottom: 1;
+    text-style: bold;
+}
+
+#entity-list {
+    height: 20;
+    border: solid $primary;
+    margin-bottom: 1;
+}
+
+#entity-list:focus {
+    border: thick $accent;
+}
+
+#entity-list > ListItem {
+    padding: 0 1;
+}
+
+#entity-list > ListItem:hover {
+    background: $primary-background;
+}
+
+.position-input {
+    width: 8;
+    margin: 0 1;
+}
+
+.position-input:focus {
+    border: thick $accent;
 }
