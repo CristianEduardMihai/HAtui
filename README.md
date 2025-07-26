@@ -32,44 +32,34 @@ And keep in mind, stream might go down at any time. Power here is weird.
 
 ## Installation & Usage
 
-### Recommended: Run from Source
+### Quick Start (One Command)
 
-1. **Clone the repository**:
+1. **Clone and run**:
    ```bash
    git clone https://github.com/CristianEduardMihai/HAtui.git
    cd HAtui
+   python run.py
    ```
 
-2. **Set up virtual environment**:
-   ```bash
-   python -m venv .venv
-   
-   # On Windows:
-   .\.venv\Scripts\activate
-   
-   # On Linux/macOS:
-   source .venv/bin/activate
-   ```
+That's it! The runner script will automatically:
+- Detect your operating system
+- Create a virtual environment
+- Install all dependencies
+- Launch HAtui (You'll still need to configure your Home Assistant connection in the `.env` file)
 
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
 
-4. **Configure environment**:
-   ```bash
-   # Copy the example and edit with your details
-   cp example.env .env
-   
-   # Edit .env with your Home Assistant URL and token
-   # HA_URL=http://your-ha-instance:8123
-   # HA_TOKEN=your_long_lived_access_token
-   ```
+### Configuration
 
-5. **Run HAtui**:
-   ```bash
-   python main.py
-   ```
+Before first use, set up your Home Assistant connection:
+
+```bash
+# Copy the example and edit with your details
+cp example.env .env
+
+# Edit .env with your Home Assistant URL and token
+# HA_URL=http://your-ha-instance:8123
+# HA_TOKEN=your_long_lived_access_token
+```
 
 ### Alternative: Pre-built Binaries
 
