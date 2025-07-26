@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       matrix:
         include:
@@ -129,16 +130,24 @@ jobs:
       if: matrix.platform != 'windows'
       run: |
         cd release-${{ matrix.platform }}
-        tar -czf ../hatui-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz *
+        if [ "${{ github.event_name }}" = "release" ]; then
+          tar -czf ../hatui-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz *
+        else
+          tar -czf ../hatui-${{ matrix.platform }}-build.tar.gz *
+        fi
 
     - name: Create archive (Windows)
       if: matrix.platform == 'windows'
       shell: pwsh
       run: |
-        Compress-Archive -Path "release-${{ matrix.platform }}/*" -DestinationPath "hatui-${{ matrix.platform }}-${{ github.ref_name }}.zip"
+        if ("${{ github.event_name }}" -eq "release") {
+          Compress-Archive -Path "release-${{ matrix.platform }}/*" -DestinationPath "hatui-${{ matrix.platform }}-${{ github.ref_name }}.zip"
+        } else {
+          Compress-Archive -Path "release-${{ matrix.platform }}/*" -DestinationPath "hatui-${{ matrix.platform }}-build.zip"
+        }
 
     - name: Upload to Release (Linux/macOS)
-      if: matrix.platform != 'windows'
+      if: matrix.platform != 'windows' && github.event_name == 'release'
       uses: softprops/action-gh-release@v1
       with:
         files: ./hatui-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz
@@ -146,7 +155,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload to Release (Windows)
-      if: matrix.platform == 'windows'
+      if: matrix.platform == 'windows' && github.event_name == 'release'
       uses: softprops/action-gh-release@v1
       with:
         files: ./hatui-${{ matrix.platform }}-${{ github.ref_name }}.zip
@@ -154,8 +163,19 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload standalone binary
+      if: github.event_name == 'release'
       uses: softprops/action-gh-release@v1
       with:
         files: ./dist/${{ matrix.binary_name }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload artifacts (manual run)
+      if: github.event_name == 'workflow_dispatch'
+      uses: actions/upload-artifact@v4
+      with:
+        name: hatui-${{ matrix.platform }}-artifacts
+        path: |
+          ./dist/${{ matrix.binary_name }}
+          ./hatui-${{ matrix.platform }}-*
+        retention-days: 7
