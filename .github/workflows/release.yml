@@ -3,6 +3,10 @@ name: Build and Release
 on:
   release:
     types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -135,32 +139,23 @@ jobs:
 
     - name: Upload to Release (Linux/macOS)
       if: matrix.platform != 'windows'
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./hatui-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./hatui-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz
-        asset_name: hatui-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz
-        asset_content_type: application/gzip
 
     - name: Upload to Release (Windows)
       if: matrix.platform == 'windows'
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./hatui-${{ matrix.platform }}-${{ github.ref_name }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./hatui-${{ matrix.platform }}-${{ github.ref_name }}.zip
-        asset_name: hatui-${{ matrix.platform }}-${{ github.ref_name }}.zip
-        asset_content_type: application/zip
 
     - name: Upload standalone binary
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./dist/${{ matrix.binary_name }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./dist/${{ matrix.binary_name }}
-        asset_name: ${{ matrix.binary_name }}
-        asset_content_type: application/octet-stream
