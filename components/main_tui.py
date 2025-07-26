@@ -12,6 +12,7 @@ from components.entity_browser import EntityBrowserScreen
 from components.grid_dashboard import GridDashboard
 from components.edit_controller import EditController
 from components.name_editor import NameEditorScreen
+from components.dashboard_manager import DashboardManagerScreen
 
 
 class MainTUI(App):
@@ -30,6 +31,8 @@ class MainTUI(App):
         Binding("space", "handle_space_key", "Toggle"),
         Binding("ctrl+up", "brightness_up", "Bright+"),
         Binding("ctrl+down", "brightness_down", "Bright-"),
+        Binding("ctrl+left", "prev_dashboard", "Prev Dashboard"),
+        Binding("ctrl+right", "next_dashboard", "Next Dashboard"),
         Binding("r", "refresh", "Refresh"),
         Binding("e", "edit_mode", "Edit"),
         # Edit mode bindings  
@@ -37,6 +40,7 @@ class MainTUI(App):
         Binding("delete", "remove_entity", "Remove"),
         Binding("enter", "pick_drop_entity", "Pick/Drop"),
         Binding("n", "edit_name", "Edit Name"),
+        Binding("d", "manage_dashboards", "Manage Dashboards"),
         Binding("escape", "exit_edit", "Exit"),
     ]
     
@@ -70,22 +74,25 @@ class MainTUI(App):
                 self.notify("Failed to connect to Home Assistant!", severity="error")
                 return
             
-            # update grid size from config
-            self.dashboard.rows = config.dashboard.rows
-            self.dashboard.cols = config.dashboard.cols
+            # update grid size from current dashboard config
+            current_dashboard = self.config_manager.get_current_dashboard()
+            self.dashboard.rows = current_dashboard.rows
+            self.dashboard.cols = current_dashboard.cols
             
-            # load entities from config
+            # load entities from current dashboard
             await self.load_entities_from_config()
             
             # start auto-refresh timer
-            self.set_interval(config.dashboard.refresh_interval, self.auto_refresh)
+            self.set_interval(current_dashboard.refresh_interval, self.auto_refresh)
             
             # initialize selection in view mode
             self.dashboard.set_selected_position(self.edit_controller.selected_row, self.edit_controller.selected_col)
             self.edit_controller.update_status_bar()
             
-            # set the title to the dashboard name
-            self.title = config.dashboard.name
+            # set the title to show current dashboard info
+            dashboard_count = self.config_manager.get_dashboard_count()
+            current_index = config.current_dashboard + 1
+            self.title = f"{current_dashboard.name} ({current_index}/{dashboard_count})"
             
             self.notify("Connected to Home Assistant!", severity="information")
             
@@ -126,12 +133,14 @@ class MainTUI(App):
         await self.commit_staged_brightness()
     
     async def load_entities_from_config(self) -> None:
-        # load up all the entities from config file
+        # load up all the entities from current dashboard
         config = self.config_manager.config
         if not config:
             return
         
-        for entity_config in config.dashboard.entities:
+        current_dashboard = self.config_manager.get_current_dashboard()
+        
+        for entity_config in current_dashboard.entities:
             # Validate position is within grid bounds
             if (entity_config.row >= self.dashboard.rows or 
                 entity_config.col >= self.dashboard.cols or
@@ -189,6 +198,110 @@ class MainTUI(App):
         if not self.edit_controller.edit_mode:
             return
         self.edit_controller.edit_entity_name()
+    
+    async def action_prev_dashboard(self) -> None:
+        # Switch to previous dashboard
+        await self.switch_dashboard(-1)
+    
+    async def action_next_dashboard(self) -> None:
+        # Switch to next dashboard
+        await self.switch_dashboard(1)
+    
+    def action_manage_dashboards(self) -> None:
+        # Open dashboard management screen (only in edit mode)
+        if not self.edit_controller.edit_mode:
+            return
+            
+        dashboard_manager = DashboardManagerScreen(
+            config_manager=self.config_manager,
+            on_change=self._on_dashboard_change
+        )
+        self.push_screen(dashboard_manager)
+    
+    async def _on_dashboard_change(self) -> None:
+        # Callback when dashboards are modified
+        await self.reload_current_dashboard()
+    
+    async def reload_current_dashboard(self) -> None:
+        # Reload the current dashboard
+        try:
+            # Clear current dashboard
+            for widget in list(self.dashboard.widgets_grid.values()):
+                row, col = None, None
+                for pos, w in self.dashboard.widgets_grid.items():
+                    if w == widget:
+                        row, col = pos
+                        break
+                if row is not None and col is not None:
+                    self.dashboard.remove_entity_widget(row, col)
+            
+            # Get current dashboard
+            current_dashboard = self.config_manager.get_current_dashboard()
+            
+            # Update grid size
+            self.dashboard.rows = current_dashboard.rows
+            self.dashboard.cols = current_dashboard.cols
+            
+            # Update dashboard edit mode state
+            self.dashboard.set_edit_mode(self.edit_controller.edit_mode)
+            
+            # Load entities from dashboard
+            await self.load_entities_from_config()
+            
+            # Update title
+            dashboard_count = self.config_manager.get_dashboard_count()
+            current_index = self.config_manager.config.current_dashboard + 1
+            self.title = f"{current_dashboard.name} ({current_index}/{dashboard_count})"
+            
+            # Reset selection
+            self.edit_controller.selected_row = 0
+            self.edit_controller.selected_col = 0
+            self.dashboard.set_selected_position(0, 0)
+            self.edit_controller.update_status_bar()
+            
+        except Exception as e:
+            self.notify(f"Error reloading dashboard: {e}", severity="error")
+    
+    async def switch_dashboard(self, direction: int) -> None:
+        try:
+            # Clear current dashboard
+            for widget in list(self.dashboard.widgets_grid.values()):
+                row, col = None, None
+                for pos, w in self.dashboard.widgets_grid.items():
+                    if w == widget:
+                        row, col = pos
+                        break
+                if row is not None and col is not None:
+                    self.dashboard.remove_entity_widget(row, col)
+            
+            # Switch to new dashboard
+            new_dashboard = self.config_manager.switch_dashboard(direction)
+            
+            # Update grid size
+            self.dashboard.rows = new_dashboard.rows
+            self.dashboard.cols = new_dashboard.cols
+            
+            # Update dashboard edit mode state
+            self.dashboard.set_edit_mode(self.edit_controller.edit_mode)
+            
+            # Load entities from new dashboard
+            await self.load_entities_from_config()
+            
+            # Update title
+            dashboard_count = self.config_manager.get_dashboard_count()
+            current_index = self.config_manager.config.current_dashboard + 1
+            self.title = f"{new_dashboard.name} ({current_index}/{dashboard_count})"
+            
+            # Reset selection and update status
+            self.edit_controller.selected_row = 0
+            self.edit_controller.selected_col = 0
+            self.dashboard.set_selected_position(0, 0)
+            self.edit_controller.update_status_bar()
+            
+            self.notify(f"Switched to: {new_dashboard.name}", severity="information")
+            
+        except Exception as e:
+            self.notify(f"Error switching dashboard: {e}", severity="error")
     
     def action_move_up(self) -> None:
         # Move selection up

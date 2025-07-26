@@ -1,55 +1,33 @@
-dashboard:
-  cols: 3
+current_dashboard: 0
+dashboards:
+- cols: 3
   entities:
-  - display_name: null
-    entity: light.bedroom1_main_desk_alarm_light
-    icon: null
-    position:
-    - 0
-    - 1
-    type: toggle
-  - display_name: Light
+  - display_name: "Lumin\u0103"
     entity: light.light_switch1_light
     icon: null
     position:
     - 0
     - 0
-    type: toggle
-  - display_name: Faq
+    type: auto
+  - display_name: Fan
     entity: switch.relay_1
     icon: null
     position:
-    - 2
+    - 1
     - 1
     type: auto
-  - display_name: Faq
-    entity: switch.relay_1
-    icon: null
-    position:
-    - 0
-    - 2
-    type: auto
-  - display_name: JAGAMASTERR
-    entity: light.jagermeister
-    icon: null
-    position:
-    - 1
-    - 0
-    type: auto
-  - display_name: null
-    entity: light.ceiling_light
-    icon: null
-    position:
-    - 2
-    - 0
-    type: light
-  - display_name: Stalinskayaaa
+  name: Default Dashboard
+  refresh_interval: 5
+  rows: 3
+- cols: 3
+  entities:
+  - display_name: Stalinskaya
     entity: light.stalinskaya
     icon: null
     position:
     - 1
     - 1
     type: auto
-  name: Main Dashboard
-  refresh_interval: 3
+  name: test2
+  refresh_interval: 5
   rows: 3

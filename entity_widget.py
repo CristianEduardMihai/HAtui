@@ -113,7 +113,7 @@ class EntityWidget(Static):
             elif self.entity_type == 'sensor':
                 unit = self.attributes.get('unit_of_measurement', '')
                 display_state = f"{self.state} {unit}".strip()
-                state_widget.update(f"Value: {display_state}")
+                state_widget.update(display_state)
             elif self.entity_type == 'climate':
                 temp = self.attributes.get('current_temperature', 'N/A')
                 target = self.attributes.get('temperature', 'N/A')

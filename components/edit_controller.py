@@ -313,9 +313,9 @@ class EditController:
                 widget = self.app.dashboard.get_widget_at(self.selected_row, self.selected_col)
                 if widget:
                     entity_name = widget.friendly_name
-                    status.update(f"[EDIT] {entity_name} | ↑↓←→: Navigate | Enter: Pick | a: Add | n: Edit Name | Del: Remove | e: Exit Edit")
+                    status.update(f"[EDIT] {entity_name} | ↑↓←→: Navigate | Enter: Pick | a: Add | n: Edit Name | d: Dashboards | Del: Remove | e: Exit")
                 else:
-                    status.update(f"[EDIT] Empty cell | ↑↓←→: Navigate | a: Add Entity | e: Exit Edit")
+                    status.update(f"[EDIT] Empty cell | ↑↓←→: Navigate | a: Add Entity | d: Manage Dashboards | e: Exit Edit")
         else:
             widget = self.app.dashboard.get_widget_at(self.selected_row, self.selected_col)
             if widget:

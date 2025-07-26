@@ -1,0 +1,45 @@
+DashboardManagerScreen {
+    align: center middle;
+}
+
+#manager_container {
+    width: 60;
+    height: 30;
+    border: thick $surface;
+    background: $surface;
+    padding: 1;
+}
+
+#dashboard_list {
+    height: 10;
+    border: solid $primary;
+    margin-bottom: 1;
+}
+
+.dashboard_item {
+    height: 1;
+    padding: 0 1;
+}
+
+.dashboard_item.--highlight {
+    background: $primary;
+    color: $text;
+}
+
+#input_container {
+    height: 3;
+    margin-top: 1;
+}
+
+#dashboard_input {
+    width: 100%;
+    margin-bottom: 1;
+}
+
+#instructions {
+    height: 10;
+    text-align: center;
+    color: $text-muted;
+    border: solid $surface;
+    margin-top: 1;
+}
