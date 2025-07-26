@@ -82,49 +82,6 @@ jobs:
         cp example.env release-${{ matrix.platform }}/
         cp README.md release-${{ matrix.platform }}/
         cp LICENSE release-${{ matrix.platform }}/
-        
-        # Create platform-specific README
-        cat > release-${{ matrix.platform }}/INSTALL.md << 'EOF'
-        # HAtui Installation Instructions
-        
-        ## Quick Start
-        
-        1. **Set up environment**:
-           - Copy `example.env` to `.env`
-           - Edit `.env` with your Home Assistant URL and access token
-        
-        2. **Get Home Assistant Token**:
-           - Go to Home Assistant: Profile → Security → Long-lived access tokens
-           - Click "Create Token", give it a name, copy the token
-           - Paste it in your `.env` file as `HA_TOKEN=your_token_here`
-        
-        3. **Run HAtui**:
-        EOF
-        
-        if [ "${{ matrix.platform }}" = "windows" ]; then
-          echo "   - Double-click \`${{ matrix.binary_name }}\` or run from command prompt" >> release-${{ matrix.platform }}/INSTALL.md
-        else
-          echo "   - Run \`./${{ matrix.binary_name }}\` from terminal" >> release-${{ matrix.platform }}/INSTALL.md
-        fi
-        
-        cat >> release-${{ matrix.platform }}/INSTALL.md << 'EOF'
-        
-        ## Controls
-        
-        - **Navigation**: Arrow keys (↑↓←→)
-        - **Toggle entities**: Space
-        - **Brightness control**: Ctrl+↑↓ (for lights)
-        - **Dashboard switching**: Ctrl+←→
-        - **Edit mode**: Press 'e'
-        - **Dashboard management**: Press 'd' (in edit mode)
-        - **Refresh**: Press 'r'
-        - **Quit**: Press 'q'
-        
-        ## First Run
-        
-        On first run, HAtui will create a default `config.yaml` with a sample dashboard.
-        You can edit this file or use the built-in editor (press 'e' then 'a' to add entities).
-        EOF
 
     - name: Create archive (Linux/macOS)
       if: matrix.platform != 'windows'
@@ -174,8 +131,6 @@ jobs:
       if: github.event_name == 'workflow_dispatch'
       uses: actions/upload-artifact@v4
       with:
-        name: hatui-${{ matrix.platform }}-artifacts
-        path: |
-          ./dist/${{ matrix.binary_name }}
-          ./hatui-${{ matrix.platform }}-*
+        name: hatui-${{ matrix.platform }}-build
+        path: ./hatui-${{ matrix.platform }}-build.*
         retention-days: 7
