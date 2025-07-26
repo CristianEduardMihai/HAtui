@@ -8,7 +8,7 @@ It handles:
 - Application startup
 
 Usage:
-    python run.py
+    python3 run.py # python if you're on Windows
 """
 
 import os
@@ -96,7 +96,7 @@ class HATuiRunner:
         
         try:
             subprocess.run([
-                sys.executable, "-m", ".venv", str(self.venv_dir)
+                sys.executable, "-m", "venv", str(self.venv_dir)
             ], check=True, capture_output=True)
             
             print("Virtual environment created successfully")

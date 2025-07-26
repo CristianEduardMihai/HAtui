@@ -38,7 +38,7 @@ And keep in mind, stream might go down at any time. Power here is weird.
    ```bash
    git clone https://github.com/CristianEduardMihai/HAtui.git
    cd HAtui
-   python run.py
+   python3 run.py # python if you're on Windows
    ```
 
 That's it! The runner script will automatically:
