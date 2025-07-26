@@ -2,15 +2,22 @@ current_dashboard: 0
 dashboards:
 - cols: 3
   entities:
-  - display_name: "Lumin\u0103"
-    entity: light.light_switch1_light
+  - display_name: Sun Status
+    entity: sun.sun
     icon: null
     position:
     - 0
     - 0
+    type: sensor
+  - display_name: demo-esp Demo ESPHome
+    entity: light.demo_esp_demo_esphome
+    icon: null
+    position:
+    - 1
+    - 0
     type: auto
-  - display_name: Fan
-    entity: switch.relay_1
+  - display_name: White Light (relay)
+    entity: switch.plug3_relay_1
     icon: null
     position:
     - 1
@@ -21,13 +28,13 @@ dashboards:
   rows: 3
 - cols: 3
   entities:
-  - display_name: Stalinskaya
-    entity: light.stalinskaya
+  - display_name: fake switch
+    entity: input_boolean.fake_switch
     icon: null
     position:
     - 1
-    - 1
+    - 0
     type: auto
-  name: test2
+  name: dashboard 2
   refresh_interval: 5
   rows: 3
