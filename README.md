@@ -17,6 +17,9 @@ HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIzOTk2MDBkMzZlYWU0NmU2YT
 
 config.yaml already has the two entities set up, so you can start playing right away
 
+❗Please report any bugs you may find
+And keep in mind, stream might go down at any time. Power here is weird.
+
 ## Features
 
 - **Multi-Dashboard Support**: Create and manage multiple custom dashboards
