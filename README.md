@@ -5,7 +5,10 @@ Standalone, self-contained TUI tool that lets users control and monitor their Ho
 ## 🎥 Live Demo
 
 Check out HAtui in action: **[Live Demo Video](https://youtu.be/t3SGov1zZ1c)**
-* stream has HUUGE delay, sorry for that
+
+❗stream has HUUGE delay, sorry for that
+
+❗people are flooding the demo URL, if it fails to connect, quit and run again until it works. cloudflare is panic blocking some requests
 
 Want to try it yourself? Use this demo environment:
 
