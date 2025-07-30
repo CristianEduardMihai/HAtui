@@ -2,26 +2,16 @@
 
 Standalone, self-contained TUI tool that lets users control and monitor their Home Assistant smart home setup through customizable terminal dashboards.
 
-## 🎥 Live Demo
+## Demo
 
-Check out HAtui in action: **[Live Demo Video](https://youtu.be/t3SGov1zZ1c)**
+**Live streaming is no longer available** due to power and connectivity issues.
 
-❗stream has HUUGE delay, sorry for that
+Instead, check this out: **[HAtui Demo Website](https://hatui.cristianmihai.cc/)**
 
-❗people are flooding the demo URL, if it fails to connect, quit and run again until it works. cloudflare is panic blocking some requests
 
-Want to try it yourself? Use this demo environment:
+Want to try it yourself? The demo website provides test credentials for a hosted Home Assistant instance where you can experience HAtui's interface and functionality with virtual switches and some sensors (no lights sadly).
 
-```bash
-# Copy to .env file
-HA_URL=https://demo-ha-container.mihais-ai-playground.xyz
-HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIzOTk2MDBkMzZlYWU0NmU2YTAwMDE5NmYwOTBlMmJkOCIsImlhdCI6MTc1MzQ0NjYyNiwiZXhwIjoyMDY4ODA2NjI2fQ.nfePeS-QQ8oA0wjOuyzRfdfT3v8Tkdp-bowuaQ5uQ58
-```
-
-config.yaml already has the two entities set up, so you can start playing right away
-
-❗Please report any bugs you may find
-And keep in mind, stream might go down at any time. Power here is weird.
+**Note:** While the test environment lets you explore some of of HAtui's features, the real magic happens when you connect it to your own Home Assistant setup with actual smart devices!
 
 ## Features
 

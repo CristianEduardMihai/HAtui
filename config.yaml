@@ -2,25 +2,39 @@ current_dashboard: 0
 dashboards:
 - cols: 3
   entities:
-  - display_name: Sun Status
-    entity: sun.sun
+  - display_name: Sun Next rising
+    entity: sensor.sun_next_rising
     icon: null
     position:
     - 0
     - 0
-    type: sensor
-  - display_name: demo-esp Demo ESPHome
-    entity: light.demo_esp_demo_esphome
+    type: auto
+  - display_name: fake switch 1
+    entity: input_boolean.fake_switch_1
     icon: null
     position:
     - 1
     - 0
     type: auto
-  - display_name: White Light (relay)
-    entity: switch.plug3_relay_1
+  - display_name: fake switch 3
+    entity: input_boolean.fake_switch_3
+    icon: null
+    position:
+    - 0
+    - 1
+    type: auto
+  - display_name: German weather warning level
+    entity: sensor.stadt_frankfurt_am_main_advance_warning_level
     icon: null
     position:
     - 1
+    - 2
+    type: auto
+  - display_name: 'GDAS ALERTS:'
+    entity: sensor.50_1121294_8_6727187
+    icon: null
+    position:
+    - 2
     - 1
     type: auto
   name: Default Dashboard
@@ -28,13 +42,27 @@ dashboards:
   rows: 3
 - cols: 3
   entities:
-  - display_name: fake switch
-    entity: input_boolean.fake_switch
+  - display_name: fake switch 2
+    entity: input_boolean.fake_switch_2
     icon: null
     position:
     - 1
+    - 1
+    type: auto
+  - display_name: fake switch 3
+    entity: input_boolean.fake_switch_3
+    icon: null
+    position:
+    - 2
+    - 1
+    type: auto
+  - display_name: fake switch 1
+    entity: input_boolean.fake_switch_1
+    icon: null
+    position:
+    - 0
     - 0
     type: auto
-  name: dashboard 2
+  name: test2
   refresh_interval: 5
   rows: 3
