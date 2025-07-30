@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAtui Demo - Home Assistant Terminal UI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="matrix-bg" id="matrix-bg"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>HAtui</h1>
+            <p>Home Assistant Terminal UI Dashboard</p>
+            <p>Control your smart home from the terminal with style</p>
+            <a href="https://github.com/CristianEduardMihai/HAtui" class="github-link">View on GitHub</a>
+        </div>
+
+        <div class="demo-section">
+            <h2>Live Demo in Real Smart Home</h2>
+            <p>Watch HAtui controlling actual smart devices in a real home environment:</p>
+            
+            <div class="video-container">
+                <iframe 
+                    src="https://www.youtube.com/embed/pNILE0pEJ3w" 
+                    title="HAtui Demo - Real Smart Home Control" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+            
+            <p>This video shows HAtui in action with actual smart lights, switches, and sensors. You can see the real-time response and the intuitive terminal interface.</p>
+        </div>
+
+        <div class="warning-box">
+            <h3><span class="emoji">⚠️</span>Demo Limitations</h3>
+            <p><strong>Important:</strong> HAtui is designed for people who already have a Home Assistant smart home setup. Without smart devices, you can't experience the full magic of controlling your lights, switches, and sensors.</p>
+            <p>However, I understand you might want to try it out before setting up your own smart home...</p>
+        </div>
+
+        <div class="info-box">
+            <h3>Test Environment Available</h3>
+            <p>I've set up a hosted Home Assistant instance on AWS with simulated devices for testing purposes. You can control virtual switches and lights, but you won't see any physical feedback (no actual lights turning on/off).</p>
+            <p>Think of it as a "sandbox mode" - all the interface functionality works, but the magic of controlling real devices is missing.</p>
+        </div>
+
+        <div class="demo-section">
+            <h2>Quick Start</h2>
+            <p>Want to try HAtui? Here's how to get started in under 2 minutes:</p>
+            
+            <h3>1. Clone and Run</h3>
+            <div class="code-block">
+<pre>git clone https://github.com/CristianEduardMihai/HAtui.git
+cd HAtui
+python3 run.py  # or 'python run.py' on Windows</pre>
+            </div>
+
+            <h3>2. Configure Test Environment</h3>
+            <p>Create a <code>.env</code> file with the test credentials:</p>
+            <div class="code-block">
+<pre># Test environment (no real devices)
+HA_URL=https://hatui-demo-container-frankfurt.cristianmihai.cc
+HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI2MmM2YjE5ZTBjZGE0ODhmOWQyODQ1ZTUxYTBjMTE2NiIsImlhdCI6MTc1Mzg3MDE5OSwiZXhwIjoyMDY5MjMwMTk5fQ.LMShm6Vz5h4C5a2rwBpSPdF6ySFBxW_nM8nqrSR5HI0</pre>
+            </div>
+
+            <h3>3. Launch HAtui</h3>
+            <p>The runner script handles everything automatically:</p>
+            <ul class="list-style">
+                <li>Detects your operating system</li>
+                <li>Creates a virtual environment</li>
+                <li>Installs all dependencies</li>
+                <li>Launches the application</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <h2>Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>Multi-Dashboard Support</h3>
+                    <p>Create and manage multiple custom dashboards for different rooms or purposes.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Real-time Control</h3>
+                    <p>Toggle lights, adjust brightness, monitor sensors with instant feedback.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Keyboard Navigation</h3>
+                    <p>Full keyboard-driven interface - no mouse required, perfect for terminal enthusiasts.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Entity Management</h3>
+                    <p>Add, remove, and rename entities in edit mode. Drag and drop to rearrange.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Brightness Staging</h3>
+                    <p>Smooth brightness control with staging to prevent API flooding.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Auto-Configuration</h3>
+                    <p>Creates default config on first run. No complex setup required.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Controls</h2>
+            <div class="controls-grid">
+                <div>
+                    <h3>Navigation</h3>
+                    <ul class="list-style">
+                        <li><strong>Arrow Keys</strong>: Navigate entities</li>
+                        <li><strong>Space</strong>: Toggle entity</li>
+                        <li><strong>Ctrl+↑↓</strong>: Adjust brightness</li>
+                        <li><strong>Ctrl+←→</strong>: Switch dashboards</li>
+                        <li><strong>r</strong>: Refresh entities</li>
+                        <li><strong>q</strong>: Quit</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Edit Mode (press 'e')</h3>
+                    <ul class="list-style">
+                        <li><strong>a</strong>: Add new entity</li>
+                        <li><strong>Delete</strong>: Remove entity</li>
+                        <li><strong>Enter</strong>: Pick/Drop entity</li>
+                        <li><strong>n</strong>: Edit entity name</li>
+                        <li><strong>d</strong>: Dashboard management</li>
+                        <li><strong>Escape</strong>: Exit edit mode</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="warning-box">
+            <h3>Test Environment Notes</h3>
+            <p><strong>Server Stability:</strong> The test server might occasionally go down due to resource limits or high traffic.</p>
+            <p><strong>No Visual Feedback:</strong> You can toggle switches and lights, but won't see any physical changes since they're virtual devices.</p>
+            <p><strong>Limited Devices:</strong> Only a few test entities are available compared to a real smart home setup.</p>
+        </div>
+
+        <div class="try-now-section">
+            <h2>Ready to Try HAtui?</h2>
+            <p>Experience the future of terminal-based smart home control</p>
+            <a href="https://github.com/CristianEduardMihai/HAtui" class="button">Get Started on GitHub</a>
+            <a href="https://github.com/CristianEduardMihai/HAtui/releases" class="button">Download Binary</a>
+        </div>
+
+        <div class="demo-section">
+            <h2>For Your Own Smart Home</h2>
+            <p>To use HAtui with your actual Home Assistant setup:</p>
+            <ol class="list-style">
+                <li>Get your Home Assistant URL and long-lived access token</li>
+                <li>Create a <code>.env</code> file with your credentials:
+                    <div class="code-block">
+<pre>HA_URL=http://your-ha-instance:8123
+HA_TOKEN=your_long_lived_access_token</pre>
+                    </div>
+                </li>
+                <li>Run HAtui and enjoy controlling your real smart devices!</li>
+            </ol>
+            <p class="link-style">Check the <a href="https://github.com/CristianEduardMihai/HAtui#readme">README</a> for detailed setup instructions.</p>
+        </div>
+    </div>
+
+    <script src="matrix.js"></script>
+</body>
+</html>
