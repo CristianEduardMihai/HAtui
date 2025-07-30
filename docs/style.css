@@ -327,6 +327,22 @@ body {
     text-shadow: 0 0 5px #00ccff;
 }
 
+.footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 20px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(15px);
+}
+
+.footer p {
+    margin: 0;
+    color: #888;
+    font-size: 14px;
+}
+
 @media (max-width: 768px) {
     .header h1 {
         font-size: 2em;
