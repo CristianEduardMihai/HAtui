@@ -25,7 +25,7 @@ Want to try it yourself? The demo website provides test credentials for a hosted
 
 ## Installation & Usage
 
-### Quick Start (One Command)
+### Quick Start (Recommended)
 
 1. **Clone and run**:
    ```bash
@@ -38,7 +38,29 @@ That's it! The runner script will automatically:
 - Detect your operating system
 - Create a virtual environment
 - Install all dependencies
-- Launch HAtui (You'll still need to configure your Home Assistant connection in the `.env` file)
+- Launch HAtui
+
+### Alternative: Easy Install with Shell Alias
+
+For a more permanent installation with a convenient `hatui` command:
+
+1. **Clone and install**:
+   ```bash
+   git clone https://github.com/CristianEduardMihai/HAtui.git
+   cd HAtui
+   python3 install.py # python if you're on Windows
+   ```
+
+This installer will:
+- Run the setup process (same as `run.py`)
+- Add a convenient `hatui` command to your shell
+
+After installation, simply run:
+```bash
+hatui
+```
+
+**❗❗IMPORTANT**: Do not move or rename the HAtui folder after installation! The shell alias points to the specific installation location.
 
 
 ### Configuration
@@ -54,7 +76,7 @@ cp example.env .env
 # HA_TOKEN=your_long_lived_access_token
 ```
 
-### Alternative: Pre-built Binaries
+### Pre-built Binaries
 
 Pre-built binaries are available in the [Releases](https://github.com/CristianEduardMihai/HAtui/releases) section:
 
