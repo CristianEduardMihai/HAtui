@@ -119,25 +119,82 @@ class HATuiInstaller:
     def create_windows_alias(self):
         #Create a Windows batch file for the hatui command. 
         try:
-            # Create a batch file in a directory that's likely in PATH
             batch_content = f'@echo off\n"{self.venv_python}" "{self.project_dir / "main.py"}" %*\n'
             
-            # Try to put it in user's local bin or create one
-            local_bin = Path.home() / "bin"
-            if not local_bin.exists():
-                local_bin.mkdir(exist_ok=True)
+            # Try multiple locations in order of preference
+            potential_paths = [
+                # System32 - usually in PATH but requires admin
+                # Path(os.environ.get('WINDIR', 'C:\\Windows')) / "System32",
+                
+                # User's AppData\Local\Microsoft\WindowsApps - usually in PATH
+                Path(os.environ.get('LOCALAPPDATA', Path.home() / 'AppData' / 'Local')) / 'Microsoft' / 'WindowsApps',
+                
+                # User's local bin directory
+                Path.home() / "bin",
+                
+                # Current project directory as fallback
+                self.project_dir,
+            ]
             
-            batch_file = local_bin / "hatui.bat"
-            batch_file.write_text(batch_content)
+            success = False
+            for target_dir in potential_paths:
+                try:
+                    if not target_dir.exists():
+                        target_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    batch_file = target_dir / "hatui.bat"
+                    batch_file.write_text(batch_content)
+                    
+                    # Check if this directory is in PATH
+                    current_path = os.environ.get('PATH', '')
+                    if str(target_dir).lower() in current_path.lower():
+                        print(f"Created Windows batch file: {batch_file}")
+                        print("   This directory is already in your PATH - hatui command should work!")
+                        success = True
+                        break
+                    else:
+                        print(f"Created batch file: {batch_file}")
+                        
+                except (PermissionError, OSError) as e:
+                    print(f"   Cannot write to {target_dir}: {e}")
+                    continue
             
-            print(f"Created Windows batch file: {batch_file}")
-            print(f"Make sure {local_bin} is in your PATH environment variable")
+            if not success:
+                # All locations failed to be in PATH, provide instructions
+                print("\nBatch file created but directory not in PATH.")
+                print("   Choose one of these options:")
+                print(f"   1. Add the directory to your PATH environment variable")
+                print(f"   2. Run hatui directly: python \"{self.project_dir / 'main.py'}\"")
+                print(f"   3. Use the run.py script: python \"{self.project_dir / 'run.py'}\"")
+                
+                # Also try to provide PowerShell profile instructions
+                self._suggest_powershell_profile()
             
             return True
             
         except Exception as e:
             print(f"Failed to create Windows batch file: {e}")
             return False
+    
+    def _suggest_powershell_profile(self):
+        #Suggest adding a PowerShell function to the user's profile.
+        try:
+            # Get PowerShell profile path
+            profile_result = subprocess.run(
+                ['powershell', '-Command', 'echo $PROFILE'], 
+                capture_output=True, text=True, timeout=10
+            )
+            
+            if profile_result.returncode == 0:
+                profile_path = profile_result.stdout.strip()
+                print(f"\nAlternative: Add this function to your PowerShell profile:")
+                print(f"   Profile location: {profile_path}")
+                print(f"   Add this line:")
+                print(f'   function hatui {{ & "{self.venv_python}" "{self.project_dir / "main.py"}" @args }}')
+                print(f"   Then restart PowerShell or run: . $PROFILE")
+                
+        except Exception:
+            pass  # If we can't get profile info, that's okay
     
     def add_shell_alias(self):
         #Add the hatui alias to the appropriate shell configuration file. 
@@ -219,9 +276,22 @@ class HATuiInstaller:
         print()
         print("Installation Location:")
         print(f"   {self.project_dir}")
+        print()
         print("Configuration:")
         print("   Edit the .env file in the HAtui directory to configure")
         print("   your Home Assistant connection before first use.")
+        print()
+        print("Quick Start Options:")
+        if self.os_name == "windows":
+            print("   1. Try typing 'hatui' in a new terminal")
+            print("   2. If that doesn't work, run directly:")
+            print(f"      python \"{self.project_dir / 'run.py'}\"")
+            print("   3. Or use the full path:")
+            print(f"      python \"{self.project_dir / 'main.py'}\"")
+        else:
+            print("   1. Reload your shell: source ~/.bashrc (or ~/.zshrc)")
+            print("   2. Then run: hatui")
+            print("   3. Or run directly: python3 run.py")
         print()
         print("For help and documentation:")
         print("   https://github.com/CristianEduardMihai/HAtui")
@@ -252,8 +322,18 @@ class HATuiInstaller:
                 self.show_completion_message()
             else:
                 print("\nInstallation completed, but alias creation failed.")
-                print("You can still run HAtui manually:")
-                print(f'   "{self.venv_python}" "{self.project_dir / "main.py"}"')
+                print("You can still run HAtui using these methods:")
+                print(f"   1. python \"{self.project_dir / 'run.py'}\"")
+                print(f"   2. python \"{self.project_dir / 'main.py'}\"")
+                if self.os_name == "windows":
+                    print("   3. Add the batch file location to your PATH environment variable")
+                    print("   4. Or add a PowerShell function to your profile (see instructions above)")
+                else:
+                    print("   3. Manually add this alias to your shell config:")
+                    shell_name = self.detect_shell()
+                    alias_cmd = self.get_alias_command(shell_name)
+                    if alias_cmd:
+                        print(f"      {alias_cmd}")
             
         except KeyboardInterrupt:
             print("\n\nInstallation interrupted by user")
