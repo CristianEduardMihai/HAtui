@@ -13,6 +13,10 @@ Want to try it yourself? The demo website provides test credentials for a hosted
 
 **Note:** While the test environment lets you explore some of of HAtui's features, the real magic happens when you connect it to your own Home Assistant setup with actual smart devices!
 
+## Video demo
+Check out this video demo showcasing HAtui's features and capabilities in a real Home Assistant environment:
+[![HAtui Demo Video](https://img.youtube.com/vi/pNILE0pEJ3w/0.jpg)](https://youtu.be/pNILE0pEJ3w)
+
 ## Features
 
 - **Multi-Dashboard Support**: Create and manage multiple custom dashboards
