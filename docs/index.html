@@ -33,19 +33,6 @@
             
             <p>This video shows HAtui in action with actual smart lights, switches, and sensors. You can see the real-time response and the intuitive terminal interface.</p>
         </div>
-
-        <div class="warning-box">
-            <h3><span class="emoji">⚠️</span>Demo Limitations</h3>
-            <p><strong>Important:</strong> HAtui is designed for people who already have a Home Assistant smart home setup. Without smart devices, you can't experience the full magic of controlling your lights, switches, and sensors.</p>
-            <p>However, I understand you might want to try it out before setting up your own smart home...</p>
-        </div>
-
-        <div class="info-box">
-            <h3>Test Environment Available</h3>
-            <p>I've set up a hosted Home Assistant instance in the cloud with simulated devices for testing purposes. You can control virtual switches and see sensors, but you won't see any physical feedback (no actual devices turning on/off).</p>
-            <p>Think of it as a "sandbox mode" - all the interface functionality works, but the magic of controlling real devices is missing.</p>
-        </div>
-
         <div class="demo-section">
             <h2>Quick Start</h2>
             <p>Want to try HAtui? Here's how to get started in under 2 minutes:</p>
@@ -57,12 +44,11 @@ cd HAtui
 python3 run.py  # or 'python run.py' on Windows</pre>
             </div>
 
-            <h3>2. Configure Test Environment</h3>
-            <p>Create a <code>.env</code> file with the test credentials:</p>
+            <h3>2. Configure Environment</h3>
+            <p>Create a <code>.env</code> file with your credentials:</p>
             <div class="code-block">
-<pre># Test environment (no real devices)
-HA_URL=https://hatui-demo-container-frankfurt.cristianmihai.cc
-HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI2MmM2YjE5ZTBjZGE0ODhmOWQyODQ1ZTUxYTBjMTE2NiIsImlhdCI6MTc1Mzg3MDE5OSwiZXhwIjoyMDY5MjMwMTk5fQ.LMShm6Vz5h4C5a2rwBpSPdF6ySFBxW_nM8nqrSR5HI0</pre>
+<pre>HA_URL=https://your-homeassistant.example.com #HTTPS not required
+HA_TOKEN=your_long_lived_access_token_here</pre>
             </div>
 
             <h3>3. Launch HAtui</h3>
@@ -73,6 +59,7 @@ HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI2MmM2YjE5ZTBjZGE0ODhmOW
                 <li>Installs all dependencies</li>
                 <li>Launches the application</li>
             </ul>
+        <p class="link-style">Check the <a href="https://github.com/CristianEduardMihai/HAtui#readme">README</a> for detailed setup instructions.</p>
         </div>
 
         <div class="demo-section">
@@ -133,13 +120,6 @@ HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI2MmM2YjE5ZTBjZGE0ODhmOW
             </div>
         </div>
 
-        <div class="warning-box">
-            <h3>Test Environment Notes</h3>
-            <p><strong>Server Stability:</strong> The test server might occasionally go down due to resource limits or high traffic.</p>
-            <p><strong>No Visual Feedback:</strong> You can toggle switches, but won't see any physical changes since they're virtual devices.</p>
-            <p><strong>Limited Devices:</strong> Only a few test entities are available compared to a real smart home setup.</p>
-        </div>
-
         <div class="try-now-section">
             <h2>Ready to Try HAtui?</h2>
             <p>Experience the future of terminal-based smart home control</p>
@@ -147,21 +127,6 @@ HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI2MmM2YjE5ZTBjZGE0ODhmOW
             <a href="https://github.com/CristianEduardMihai/HAtui/releases" class="button">Download Binary</a>
         </div>
 
-        <div class="demo-section">
-            <h2>For Your Own Smart Home</h2>
-            <p>To use HAtui with your actual Home Assistant setup:</p>
-            <ol class="list-style">
-                <li>Get your Home Assistant URL and long-lived access token</li>
-                <li>Create a <code>.env</code> file with your credentials:
-                    <div class="code-block">
-<pre>HA_URL=http://your-ha-instance:8123
-HA_TOKEN=your_long_lived_access_token</pre>
-                    </div>
-                </li>
-                <li>Run HAtui and enjoy controlling your real smart devices!</li>
-            </ol>
-            <p class="link-style">Check the <a href="https://github.com/CristianEduardMihai/HAtui#readme">README</a> for detailed setup instructions.</p>
-        </div>
     </div>
 
     <footer class="footer">
